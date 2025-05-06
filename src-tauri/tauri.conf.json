@@ -13,13 +13,15 @@
     "windows": [
       {
         "title": "transaction-sync-v2",
-        "width": 800,
-        "height": 600
+        "width": 400,
+        "height": 600,
+        "resizable": false
       }
     ],
     "security": {
       "csp": null
-    }
+    },
+    "macOSPrivateApi": true
   },
   "bundle": {
     "active": true,

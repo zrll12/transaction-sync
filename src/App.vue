@@ -1,5 +1,5 @@
 <template>
-  <div class="size-full">
+  <div class="size-full bg-opacity-25">
     <router-view />
   </div>
 </template>
