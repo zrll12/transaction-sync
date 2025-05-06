@@ -38,7 +38,7 @@ const rootSelectClick = (
 
 <template>
   <div class="w-full h-full bg-slate-950">
-  <div class="h-full w-600px overflow-auto mx-auto py-32px box-border">
+  <div class="h-full max-w-400px overflow-auto mx-auto py-32px box-border">
     <div class="w-full">
       <div class="w-full h-fit box-border p-4 bg-slate-100/15  rounded-3xl">
         <h1 class="text-slate-200 text-base leading-none">队长设置</h1>
