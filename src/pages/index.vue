@@ -40,7 +40,7 @@ const getMemberText = (id: number) => {
     return;
   }
   const [x,y] = member.point;
-  return x >= 0 && y >= 0 ? `(${x}, ${y})` : '请选择'
+  return x > 0 && y > 0 ? `(${x}, ${y})` : '请选择'
 }
 
 const removeTeamMember = (id: number) => {
@@ -56,15 +56,26 @@ const rootSelectClick = async (type: RootSelectType) => {
 }
 
 listen('set_detect_area1', (event) => {
-  console.log("左上角座标", event.payload)
+  let payload = event.payload as number[];
+  rootPoint.x1 = payload[0];
+  rootPoint.y1 = payload[1];
 })
 
 listen('set_detect_area2', (event) => {
-  console.log("右下角座标", event.payload)
+  let payload = event.payload as number[];
+  rootPoint.x2 = payload[0];
+  rootPoint.y2 = payload[1];
 })
 
 listen('set_click_position', (event) => {
-  console.log("队员座标", event.payload)
+  const positions = event.payload as [number, number][];
+  positions.forEach(([x, y], index) => {
+    const memberId = index + 1;
+    const memberIndex = teamMember.value.findIndex(m => m.id === memberId);
+    if (memberIndex !== -1) {
+      teamMember.value[memberIndex].point = [x, y];
+    }
+  });
 })
 
 </script>
