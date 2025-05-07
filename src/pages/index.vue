@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import {ref} from 'vue';
+import {computed, reactive, ref} from 'vue';
 import Trash from '../components/trash.vue';
 import {invoke} from "@tauri-apps/api/core";
 import {listen} from "@tauri-apps/api/event";
 
 type TeamMember = {
   id: number;
-  point: [number, number];
+  point: [number,number];
 }
 
 enum RootSelectType {
@@ -15,15 +15,34 @@ enum RootSelectType {
 }
 
 const teamMember = ref<TeamMember[]>([]);
+const rootPoint = reactive({
+  x1: 0,
+  y1: 0,
+  x2: 0,
+  y2: 0
+})
+
+const point1Text = computed(() => rootPoint.x1 > 0 && rootPoint.y1 > 0 ? `(${rootPoint.x1}, ${rootPoint.y1})` : '点击选择' )
+const point2Text = computed(() => rootPoint.x2 > 0 && rootPoint.y2 > 0 ? `(${rootPoint.x2}, ${rootPoint.y2})` : '点击选择' )
 
 const addTeamMember = () => {
   const last = teamMember.value[teamMember.value.length - 1];
   let id = last ? last.id + 1 : 1;
   teamMember.value.push({
     id,
-    point: [-1, -1]
+    point: [0,0]
   })
 }
+
+const getMemberText = (id: number) => {
+  const member = teamMember.value.filter(member => member.id == id)[0];
+  if (!member){
+    return;
+  }
+  const [x,y] = member.point;
+  return x >= 0 && y >= 0 ? `(${x}, ${y})` : '请选择'
+}
+
 const removeTeamMember = (id: number) => {
   teamMember.value = teamMember.value.filter((member) => member.id !== id);
 }
@@ -61,14 +80,14 @@ listen('set_click_position', (event) => {
         <div class="flex flex-col gap-4">
         <div class="w-full grid grid-cols-2 justify-between">
             <span class="text-slate-200">监控区域左上角</span>
-            <button @click="()=>rootSelectClick(RootSelectType.LT)" class="h-48px hover:text-blue-500 hover:border-blue-500 transition cursor-pointer rounded-xl text-slate-200 text-xl bg-transparent border border-3px border-solid border-slate-300">
-              点击选择
+            <button @click="()=>rootSelectClick(RootSelectType.LT)" class="min-h-48px hover:text-blue-500 hover:border-blue-500 transition cursor-pointer rounded-xl text-slate-200 text-xl bg-transparent border border-3px border-solid border-slate-300">
+              {{ point1Text }}
             </button>
           </div>
           <div class="w-full grid grid-cols-2 justify-between">
             <span class="text-slate-200">监控区域右下角</span>
-            <button @click="()=>rootSelectClick(RootSelectType.RB)" class="h-48px hover:text-blue-500 hover:border-blue-500 transition cursor-pointer rounded-xl text-slate-200 text-xl bg-transparent border border-3px border-solid border-slate-300">
-              点击选择
+            <button @click="()=>rootSelectClick(RootSelectType.RB)" class="min-h-48px hover:text-blue-500 hover:border-blue-500 transition cursor-pointer rounded-xl text-slate-200 text-xl bg-transparent border border-3px border-solid border-slate-300">
+              {{ point2Text }}
             </button>
           </div>
         </div>
@@ -81,7 +100,7 @@ listen('set_click_position', (event) => {
         </div>
         <div class="grow flex">
         <button @click="()=>onClickTeamMemberSelect(member.id)" class="h-48px grow hover:text-blue-500 hover:border-blue-500 transition cursor-pointer rounded-xl text-slate-200 text-xl bg-transparent border border-3px border-solid border-slate-300">
-          点击选择
+          {{ getMemberText(member.id) }}
         </button>
         <button @click="() => removeTeamMember(member.id)" class="h-48px w-48px aspect-square bg-transparent border-none text-slate-200">
           <Trash class="size-full hover:bg-red-500/20 cursor-pointer rounded" />
