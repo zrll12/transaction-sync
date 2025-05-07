@@ -1,10 +1,10 @@
+use enigo::{Button, Coordinate, Direction, Enigo, Mouse, Settings};
+use lazy_static::lazy_static;
+use rdev::{listen, Event, EventType};
 use std::sync::atomic::{AtomicBool, AtomicU32};
 use std::sync::Mutex;
 use std::thread::{sleep, spawn};
 use std::time::Duration;
-use enigo::{Button, Coordinate, Direction, Enigo, Mouse, Settings};
-use lazy_static::lazy_static;
-use rdev::{listen, Event, EventType};
 
 lazy_static! {
     pub static ref DETECT_AREA: ((AtomicU32, AtomicU32), (AtomicU32, AtomicU32)) = (
@@ -25,12 +25,11 @@ pub fn delete_click_position(index: i32) {
 
 #[tauri::command]
 pub fn move_mouse() {
-    let x = DETECT_AREA.0.0.load(std::sync::atomic::Ordering::Acquire) as i32;
-    let y = DETECT_AREA.0.1.load(std::sync::atomic::Ordering::Acquire) as i32;
+    let x = DETECT_AREA.0 .0.load(std::sync::atomic::Ordering::Acquire) as i32;
+    let y = DETECT_AREA.0 .1.load(std::sync::atomic::Ordering::Acquire) as i32;
     let mut enigo = Enigo::new(&Settings::default()).unwrap();
     enigo.move_mouse(x, y, Coordinate::Abs).unwrap();
 }
-
 
 pub fn init() {
     if let Err(error) = listen(callback) {
@@ -45,8 +44,14 @@ fn callback(event: Event) {
                 return;
             }
             CLICKED.store(true, std::sync::atomic::Ordering::Release);
-            let x = (DETECT_AREA.0.0.load(std::sync::atomic::Ordering::Acquire), DETECT_AREA.1.0.load(std::sync::atomic::Ordering::Acquire));
-            let y = (DETECT_AREA.0.1.load(std::sync::atomic::Ordering::Acquire), DETECT_AREA.1.1.load(std::sync::atomic::Ordering::Acquire));
+            let x = (
+                DETECT_AREA.0 .0.load(std::sync::atomic::Ordering::Acquire),
+                DETECT_AREA.1 .0.load(std::sync::atomic::Ordering::Acquire),
+            );
+            let y = (
+                DETECT_AREA.0 .1.load(std::sync::atomic::Ordering::Acquire),
+                DETECT_AREA.1 .1.load(std::sync::atomic::Ordering::Acquire),
+            );
 
             let mouse_x = MOUSE_POSITION_X.load(std::sync::atomic::Ordering::Acquire);
             let mouse_y = MOUSE_POSITION_Y.load(std::sync::atomic::Ordering::Acquire);
@@ -57,7 +62,7 @@ fn callback(event: Event) {
                 spawn(|| {
                     click_all();
                 });
-            } else { 
+            } else {
                 CLICKED.store(false, std::sync::atomic::Ordering::SeqCst);
             }
         }
@@ -83,7 +88,13 @@ fn click_all() {
         sleep(Duration::from_millis(100));
     }
     enigo.button(Button::Left, Direction::Release).unwrap();
-    enigo.move_mouse(current_mouse_pos_x as i32, current_mouse_pos_y as i32, Coordinate::Abs).unwrap();
+    enigo
+        .move_mouse(
+            current_mouse_pos_x as i32,
+            current_mouse_pos_y as i32,
+            Coordinate::Abs,
+        )
+        .unwrap();
     enigo.button(Button::Left, Direction::Release).unwrap();
     sleep(Duration::from_millis(500));
     MOUSE_POSITION_X.store(current_mouse_pos_x, std::sync::atomic::Ordering::SeqCst);
