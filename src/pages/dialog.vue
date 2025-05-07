@@ -1,10 +1,20 @@
+<script setup lang="ts">
+
+import {invoke} from "@tauri-apps/api/core";
+
+const selectWindowClose = () => {
+  invoke("close_select_window")
+}
+
+</script>
+
 <template>
-  <div class="w-fit px-4 py-2 bg-zinc-200 backdrop-blur-lg rounded-lg space-y-2">
-    <div class="size-64px bg-red-500">
+  <div class="w-fit px-4 py-2 bg-zinc-200 rounded-lg space-y-2 bg-opacity-25 cursor-pointer" data-tauri-drag-region>
+    <div class="size-64px bg-red-500" data-tauri-drag-region>
       <!-- 替换为某一个标签 -->
       <!-- <img src="" alt=""> -->
     </div>
-    <button class="w-full bg-blue-500 text-zinc-200 px-3 py-1 rounded-md border-none">
+    <button class="w-full bg-blue-500 text-zinc-200 px-3 py-1 rounded-md border-none" @click="selectWindowClose">
       确认
     </button>
   </div>

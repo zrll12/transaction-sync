@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import {ref} from 'vue';
 import Trash from '../components/trash.vue';
+import {invoke} from "@tauri-apps/api/core";
+import {listen} from "@tauri-apps/api/event";
 
 type TeamMember = {
   id: number;
@@ -14,25 +16,37 @@ enum RootSelectType {
 
 const teamMember = ref<TeamMember[]>([]);
 
-const addTeamMember = ()=>{
+const addTeamMember = () => {
   const last = teamMember.value[teamMember.value.length - 1];
-  let id = last ? last.id+1 : 1;
+  let id = last ? last.id + 1 : 1;
   teamMember.value.push({
     id,
-    point: [-1,-1]
+    point: [-1, -1]
   })
 }
 const removeTeamMember = (id: number) => {
   teamMember.value = teamMember.value.filter((member) => member.id !== id);
 }
-const onClickTeamMemberSelect = (id: number) => {
-  console.log(id);
+const onClickTeamMemberSelect = async (id: number) => {
+  await invoke('open_select_window', {index: id + 1});
 }
-const rootSelectClick = (
-  type: RootSelectType
-) => {
-  console.log(type)
+
+const rootSelectClick = async (type: RootSelectType) => {
+  const index = type === RootSelectType.LT ? 0 : 1;
+  await invoke('open_select_window', {index});
 }
+
+listen('set_detect_area1', (event) => {
+  console.log("左上角座标", event.payload)
+})
+
+listen('set_detect_area2', (event) => {
+  console.log("右下角座标", event.payload)
+})
+
+listen('set_click_position', (event) => {
+  console.log("队员座标", event.payload)
+})
 
 </script>
 
