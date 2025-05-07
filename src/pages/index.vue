@@ -45,6 +45,7 @@ const getMemberText = (id: number) => {
 
 const removeTeamMember = (id: number) => {
   teamMember.value = teamMember.value.filter((member) => member.id !== id);
+  invoke("delete_click_position", {index: id - 1});
 }
 const onClickTeamMemberSelect = async (id: number) => {
   await invoke('open_select_window', {index: id + 1});
@@ -53,6 +54,10 @@ const onClickTeamMemberSelect = async (id: number) => {
 const rootSelectClick = async (type: RootSelectType) => {
   const index = type === RootSelectType.LT ? 0 : 1;
   await invoke('open_select_window', {index});
+}
+
+const testClick = async () => {
+  await invoke('move_mouse');
 }
 
 listen('set_detect_area1', (event) => {
@@ -119,9 +124,12 @@ listen('set_click_position', (event) => {
       </div>
       </div>
     </div>
-    <div class="w-full h-fit mt-4">
+    <div class="w-full h-fit mt-4 space-y-4">
       <button class="w-full h-48px rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 text-zinc-200 border-none cursor-pointer shadow-md hover:shadow-blue-500/30 transition-all hover:scale-[1.02] active:scale-95 font-sans text-xl" @click="addTeamMember">
         添加队员
+      </button>
+      <button class="w-full h-48px rounded-xl bg-gradient-to-r from-green-600 to-green-500 text-zinc-200 border-none cursor-pointer shadow-md hover:shadow-green-500/30 transition-all hover:scale-[1.02] active:scale-95 font-sans text-xl" @click="testClick">
+        测试点击
       </button>
     </div>
   </div></div>
