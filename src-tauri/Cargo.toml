@@ -26,4 +26,7 @@ lazy_static = "1.5.0"
 enigo = "0.3.0"
 rdev = "0.5.3"
 tauri-plugin-os = "2"
+xcap = "0.5.1"
+opencv = "0.94.4"
+base64 = "0.22.1"
 

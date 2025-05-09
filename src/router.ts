@@ -1,17 +1,19 @@
-import {createRouter, createWebHistory, RouteRecordRaw} from 'vue-router';
-
-const routes: RouteRecordRaw[] = [
-  {
-    path: '/',
-    component: ()=>import('./pages/index.vue')
-  },
-  {
-    path: '/dialog',
-    component: ()=>import('./pages/dialog.vue')
-  }
-]
+import { createRouter, createWebHistory } from 'vue-router'
 
 export default createRouter({
-  routes,
-  history: createWebHistory()
+  history: createWebHistory(),
+  routes: [
+    {
+      path: '/',
+      component: () => import('./pages/index.vue')
+    },
+    {
+      path: '/dialog',
+      component: () => import('./pages/dialog.vue')
+    },
+    {
+      path: '/preview',
+      component: () => import('./pages/preview.vue')
+    }
+  ]
 })

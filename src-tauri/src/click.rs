@@ -31,49 +31,6 @@ pub fn move_mouse() {
     enigo.move_mouse(x, y, Coordinate::Abs).unwrap();
 }
 
-pub fn init() {
-    if let Err(error) = listen(callback) {
-        println!("Error: {:?}", error)
-    }
-}
-
-fn callback(event: Event) {
-    match event.event_type {
-        EventType::ButtonPress(rdev::Button::Left) => {
-            if CLICKED.load(std::sync::atomic::Ordering::Acquire) {
-                return;
-            }
-            CLICKED.store(true, std::sync::atomic::Ordering::Release);
-            let x = (
-                DETECT_AREA.0 .0.load(std::sync::atomic::Ordering::Acquire),
-                DETECT_AREA.1 .0.load(std::sync::atomic::Ordering::Acquire),
-            );
-            let y = (
-                DETECT_AREA.0 .1.load(std::sync::atomic::Ordering::Acquire),
-                DETECT_AREA.1 .1.load(std::sync::atomic::Ordering::Acquire),
-            );
-
-            let mouse_x = MOUSE_POSITION_X.load(std::sync::atomic::Ordering::Acquire);
-            let mouse_y = MOUSE_POSITION_Y.load(std::sync::atomic::Ordering::Acquire);
-
-            // println!("position: {:?}", (mouse_x, mouse_y));
-            if (mouse_x >= x.0 && mouse_x <= x.1) && (mouse_y >= y.0 && mouse_y <= y.1) {
-                println!("click");
-                spawn(|| {
-                    click_all();
-                });
-            } else {
-                CLICKED.store(false, std::sync::atomic::Ordering::SeqCst);
-            }
-        }
-        EventType::MouseMove { x, y } => {
-            MOUSE_POSITION_X.store(x as u32, std::sync::atomic::Ordering::SeqCst);
-            MOUSE_POSITION_Y.store(y as u32, std::sync::atomic::Ordering::SeqCst);
-        }
-        _ => {}
-    }
-}
-
 fn click_all() {
     let current_mouse_pos_x = MOUSE_POSITION_X.load(std::sync::atomic::Ordering::Acquire);
     let current_mouse_pos_y = MOUSE_POSITION_Y.load(std::sync::atomic::Ordering::Acquire);

@@ -1,5 +1,6 @@
 use crate::click::{CLICK_POSITION, DETECT_AREA};
 use tauri::{
+    Manager,
     Emitter, WebviewUrl, WebviewWindowBuilder, Window
 };
 
@@ -15,6 +16,20 @@ pub async fn open_select_window(handle: tauri::AppHandle, index: i32) -> Result<
         .transparent(true)
         .shadow(false)
         .resizable(false)
+        .build()
+        .map_err(|e| e.to_string())?;
+
+    window.show().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn open_preview_window(handle: tauri::AppHandle) -> Result<(), String> {
+    let window = WebviewWindowBuilder::new(&handle, "preview", WebviewUrl::App("preview".into()))
+        .inner_size(400.0, 300.0)
+        .center()
+        .always_on_top(true)
+        .decorations(true)
+        .resizable(true)
         .build()
         .map_err(|e| e.to_string())?;
 
