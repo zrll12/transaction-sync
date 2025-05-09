@@ -6,6 +6,7 @@ const imageData1 = ref("");
 const imageCount1 = ref(0);
 const imageData2 = ref("");
 const imageCount2 = ref(0);
+const state = ref("");
 
 interface PreviewEvent {
   image: string;
@@ -21,11 +22,16 @@ listen("update-preview-2", (event: { payload: PreviewEvent }) => {
   imageData2.value = `data:image/png;base64,${event.payload.image}`;
   imageCount2.value = event.payload.count;
 });
+
+listen("detection_state", (event) => {
+  state.value = event.payload as string;
+})
 </script>
 
 <template>
   <div class="w-full h-full bg-slate-900 flex items-center justify-center p-4">
     <div class="flex gap-4 w-full h-full">
+      <div class="text-white mt-2" v-text="state" />
       <div class="flex-1 min-w-0 flex items-center justify-center bg-slate-800/50 rounded-lg overflow-hidden">
         <div class="flex flex-col items-center">
           <img v-if="imageData1" :src="imageData1" class="max-w-full max-h-full object-contain" alt="preview 1" />
