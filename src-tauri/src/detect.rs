@@ -1,3 +1,4 @@
+use base64::Engine;
 use opencv::core::Vector;
 use opencv::prelude::*;
 use tauri::{Emitter, WebviewUrl, WebviewWindowBuilder};
@@ -93,7 +94,7 @@ pub fn capture_screen_region(app_handle: &tauri::AppHandle, x: i32, y: i32, widt
     let mut encoded_buffer = Vector::new();
     opencv::imgcodecs::imencode(".png", &mat, &mut encoded_buffer, &Vector::new())
         .map_err(|e| e.to_string())?;
-    let base64_image =  base64::encode(&encoded_buffer);
+    let base64_image = base64::engine::general_purpose::STANDARD.encode(&encoded_buffer);
 
     // 发送图像数据到前端
     app_handle

@@ -1,6 +1,5 @@
 use crate::click::{CLICK_POSITION, DETECT_AREA};
 use tauri::{
-    Manager,
     Emitter, WebviewUrl, WebviewWindowBuilder, Window
 };
 

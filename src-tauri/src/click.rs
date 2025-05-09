@@ -1,9 +1,8 @@
 use enigo::{Button, Coordinate, Direction, Enigo, Mouse, Settings};
 use lazy_static::lazy_static;
-use rdev::{listen, Event, EventType};
 use std::sync::atomic::{AtomicBool, AtomicU32};
 use std::sync::Mutex;
-use std::thread::{sleep, spawn};
+use std::thread::sleep;
 use std::time::Duration;
 
 lazy_static! {

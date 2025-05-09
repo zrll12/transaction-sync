@@ -12,6 +12,6 @@ listen("update-preview", (event) => {
 
 <template>
   <div class="w-full h-full bg-slate-900 flex items-center justify-center">
-    <img v-if="imageData" :src="imageData" class="max-w-full max-h-full object-contain" />
+    <img v-if="imageData" :src="imageData" class="max-w-full max-h-full object-contain" alt="preview" />
   </div>
 </template>
