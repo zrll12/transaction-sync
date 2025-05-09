@@ -1,6 +1,9 @@
 use base64::Engine;
-use opencv::core::Vector;
+use opencv::core::{Vector, Point, Scalar};
+use opencv::core::AlgorithmHint::ALGO_HINT_DEFAULT;
+use opencv::imgproc;
 use opencv::prelude::*;
+use serde_json::json;
 use tauri::{Emitter, WebviewUrl, WebviewWindowBuilder};
 use xcap::image::GenericImageView;
 use xcap::Monitor;
@@ -14,6 +17,7 @@ pub fn init(app_handle: tauri::AppHandle) {
 
     // 新建窗口
     WebviewWindowBuilder::new(&app_handle, "Capture-Preview", WebviewUrl::App("preview".into()))
+        .title("Capture Preview")
         .center()
         .build()
         .map_err(|e| e.to_string())
@@ -24,29 +28,40 @@ pub fn init(app_handle: tauri::AppHandle) {
     // 启动检测线程
     std::thread::spawn(move || {
         loop {
-            // 获取检测区域坐标
-            let x1 = crate::click::DETECT_AREA.0.0.load(std::sync::atomic::Ordering::Relaxed) as i32;
-            let y1 = crate::click::DETECT_AREA.0.1.load(std::sync::atomic::Ordering::Relaxed) as i32;
-            let x2 = crate::click::DETECT_AREA.1.0.load(std::sync::atomic::Ordering::Relaxed) as i32;
-            let y2 = crate::click::DETECT_AREA.1.1.load(std::sync::atomic::Ordering::Relaxed) as i32;
+            // 获取检测区域1坐标
+            let x1_1 = crate::click::DETECT_AREA.0.0.load(std::sync::atomic::Ordering::Relaxed) as i32;
+            let y1_1 = crate::click::DETECT_AREA.0.1.load(std::sync::atomic::Ordering::Relaxed) as i32;
+            let x2_1 = crate::click::DETECT_AREA.1.0.load(std::sync::atomic::Ordering::Relaxed) as i32;
+            let y2_1 = crate::click::DETECT_AREA.1.1.load(std::sync::atomic::Ordering::Relaxed) as i32;
+
+            // 获取检测区域2坐标
+            let x1_2 = crate::click::DETECT_AREA.2.0.load(std::sync::atomic::Ordering::Relaxed) as i32;
+            let y1_2 = crate::click::DETECT_AREA.2.1.load(std::sync::atomic::Ordering::Relaxed) as i32;
+            let x2_2 = crate::click::DETECT_AREA.3.0.load(std::sync::atomic::Ordering::Relaxed) as i32;
+            let y2_2 = crate::click::DETECT_AREA.3.1.load(std::sync::atomic::Ordering::Relaxed) as i32;
 
             let scale_factor = if tauri_plugin_os::platform().contains("windows") {
                 1.0 // Windows does not change the position  when scaling
             } else {
-                Monitor::from_point(x1, y1).unwrap().scale_factor().unwrap()
+                Monitor::from_point(x1_1, y1_1).unwrap().scale_factor().unwrap()
             };
 
-            // 计算检测区域的宽度和高度
-            let width = (x2 - x1).abs() * scale_factor as i32;
-            let height = (y2 - y1).abs() * scale_factor as i32;
+            // 处理区域1
+            let width_1 = (x2_1 - x1_1).abs() * scale_factor as i32;
+            let height_1 = (y2_1 - y1_1).abs() * scale_factor as i32;
+            let x_1 = x1_1.min(x2_1) * scale_factor as i32;
+            let y_1 = y1_1.min(y2_1) * scale_factor as i32;
+            if width_1 > 0 && height_1 > 0 {
+                let _ = capture_screen_region(&app_handle, x_1, y_1, width_1, height_1, "update-preview-1");
+            }
 
-            // 获取左上角坐标
-            let x = x1.min(x2) * scale_factor as i32;
-            let y = y1.min(y2) * scale_factor as i32;
-
-            // 执行区域检测
-            if width > 0 && height > 0 {
-                let _ = capture_screen_region(&app_handle, x, y, width, height);
+            // 处理区域2
+            let width_2 = (x2_2 - x1_2).abs() * scale_factor as i32;
+            let height_2 = (y2_2 - y1_2).abs() * scale_factor as i32;
+            let x_2 = x1_2.min(x2_2) * scale_factor as i32;
+            let y_2 = y1_2.min(y2_2) * scale_factor as i32;
+            if width_2 > 0 && height_2 > 0 {
+                let _ = capture_screen_region(&app_handle, x_2, y_2, width_2, height_2, "update-preview-2");
             }
 
             // 等待100毫秒
@@ -55,7 +70,7 @@ pub fn init(app_handle: tauri::AppHandle) {
     });
 }
 
-pub fn capture_screen_region(app_handle: &tauri::AppHandle, x: i32, y: i32, width: i32, height: i32) -> Result<(), String> {
+pub fn capture_screen_region(app_handle: &tauri::AppHandle, x: i32, y: i32, width: i32, height: i32, event_name: &str) -> Result<(), String> {
     let monitors = Monitor::all().map_err(|e| e.to_string())?;
     let primary = monitors.first().ok_or("No monitor found")?;
 
@@ -76,7 +91,7 @@ pub fn capture_screen_region(app_handle: &tauri::AppHandle, x: i32, y: i32, widt
         height as i32,
         width as i32,
         opencv::core::CV_8UC4,
-        opencv::core::Scalar::all(0.0),
+        Scalar::all(0.0),
     )
     .map_err(|e| e.to_string())?;
 
@@ -90,15 +105,59 @@ pub fn capture_screen_region(app_handle: &tauri::AppHandle, x: i32, y: i32, widt
         mat.set_data(buffer.as_ptr());
     }
 
+    // 转换为灰度图
+    let mut gray = Mat::default();
+    imgproc::cvt_color(&mat, &mut gray, imgproc::COLOR_BGR2GRAY, 0, ALGO_HINT_DEFAULT)
+        .map_err(|e| e.to_string())?;
+
+    // 边缘检测
+    let mut edges = Mat::default();
+    imgproc::canny(&gray, &mut edges, 50.0, 150.0, 3, false)
+        .map_err(|e| e.to_string())?;
+
+    // 查找轮廓
+    let mut contours = Vector::<Vector<Point>>::new();
+    let mut hierarchy = Mat::default();
+    imgproc::find_contours(
+        &edges,
+        &mut contours,
+        imgproc::RETR_EXTERNAL,
+        imgproc::CHAIN_APPROX_SIMPLE,
+        Point::new(0, 0),
+    )
+    .map_err(|e| e.to_string())?;
+
+    // 绘制轮廓
+    let mut result = Mat::default();
+    imgproc::cvt_color(&edges, &mut result, imgproc::COLOR_GRAY2BGR, 0, ALGO_HINT_DEFAULT).unwrap();
+    for i in 0..contours.len() {
+        imgproc::draw_contours(
+            &mut result,
+            &contours,
+            i as i32,
+            Scalar::new(0.0, 255.0, 0.0, 255.0),
+            2,
+            imgproc::LINE_8,
+            &hierarchy,
+            0,
+            Point::new(0, 0),
+        )
+        .map_err(|e| e.to_string())?;
+    }
+
     // 将图像转换为base64字符串
     let mut encoded_buffer = Vector::new();
-    opencv::imgcodecs::imencode(".png", &mat, &mut encoded_buffer, &Vector::new())
+    opencv::imgcodecs::imencode(".png", &result, &mut encoded_buffer, &Vector::new())
         .map_err(|e| e.to_string())?;
     let base64_image = base64::engine::general_purpose::STANDARD.encode(&encoded_buffer);
 
-    // 发送图像数据到前端
+    // 发送图像数据和物体数量到前端
+    let data = json!({
+        "image": base64_image,
+        "count": contours.len()
+    });
     app_handle
-        .emit("update-preview", base64_image)
+        .emit(event_name, data)
         .map_err(|e| e.to_string())?;
 
     Ok(())

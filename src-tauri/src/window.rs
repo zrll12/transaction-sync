@@ -48,47 +48,64 @@ pub async fn close_select_window(window: Window, handle: tauri::AppHandle) -> Re
         pos.y as f64 / scale_factor + 40.0,
     );
     let index = window.label().parse::<i32>().unwrap();
-    if index == 0 {
-        DETECT_AREA
-            .0
-             .0
-            .store(physical_pos.0 as u32, std::sync::atomic::Ordering::Relaxed);
-        DETECT_AREA
-            .0
-             .1
-            .store(physical_pos.1 as u32, std::sync::atomic::Ordering::Relaxed);
-        handle
-            .emit(
-                "set_detect_area1",
-                (physical_pos.0 as i32, physical_pos.1 as i32),
-            )
-            .map_err(|e| e.to_string())?;
-    } else if index == 1 {
-        DETECT_AREA
-            .1
-             .0
-            .store(physical_pos.0 as u32, std::sync::atomic::Ordering::Relaxed);
-        DETECT_AREA
-            .1
-             .1
-            .store(physical_pos.1 as u32, std::sync::atomic::Ordering::Relaxed);
-        handle
-            .emit(
-                "set_detect_area2",
-                (physical_pos.0 as i32, physical_pos.1 as i32),
-            )
-            .map_err(|e| e.to_string())?;
-    } else {
-        let member_index = index - 2;
-        let mut positions = CLICK_POSITION.lock().unwrap();
-        if member_index >= positions.len() as i32 {
-            positions.resize(member_index as usize + 1, (0, 0))
+    match index {
+        0 => {
+            // 区域1左上角
+            DETECT_AREA.0.0.store(physical_pos.0 as u32, std::sync::atomic::Ordering::Relaxed);
+            DETECT_AREA.0.1.store(physical_pos.1 as u32, std::sync::atomic::Ordering::Relaxed);
+            handle
+                .emit(
+                    "set_detect_area1",
+                    (physical_pos.0 as i32, physical_pos.1 as i32),
+                )
+                .map_err(|e| e.to_string())?
+        },
+        1 => {
+            // 区域1右下角
+            DETECT_AREA.1.0.store(physical_pos.0 as u32, std::sync::atomic::Ordering::Relaxed);
+            DETECT_AREA.1.1.store(physical_pos.1 as u32, std::sync::atomic::Ordering::Relaxed);
+            handle
+                .emit(
+                    "set_detect_area2",
+                    (physical_pos.0 as i32, physical_pos.1 as i32),
+                )
+                .map_err(|e| e.to_string())?
+        },
+        2 => {
+            // 区域2左上角
+            DETECT_AREA.2.0.store(physical_pos.0 as u32, std::sync::atomic::Ordering::Relaxed);
+            DETECT_AREA.2.1.store(physical_pos.1 as u32, std::sync::atomic::Ordering::Relaxed);
+            handle
+                .emit(
+                    "set_detect_area3",
+                    (physical_pos.0 as i32, physical_pos.1 as i32),
+                )
+                .map_err(|e| e.to_string())?
+        },
+        3 => {
+            // 区域2右下角
+            DETECT_AREA.3.0.store(physical_pos.0 as u32, std::sync::atomic::Ordering::Relaxed);
+            DETECT_AREA.3.1.store(physical_pos.1 as u32, std::sync::atomic::Ordering::Relaxed);
+            handle
+                .emit(
+                    "set_detect_area4",
+                    (physical_pos.0 as i32, physical_pos.1 as i32),
+                )
+                .map_err(|e| e.to_string())?
+        },
+        _ => {
+            // 队员点击位置
+            let member_index = index - 4;
+            let mut positions = CLICK_POSITION.lock().unwrap();
+            if member_index >= positions.len() as i32 {
+                positions.resize(member_index as usize + 1, (0, 0))
+            }
+            positions[member_index as usize] = (physical_pos.0 as i32, physical_pos.1 as i32);
+            handle
+                .emit("set_click_position", positions.clone())
+                .map_err(|e| e.to_string())?
         }
-        positions[member_index as usize] = (physical_pos.0 as i32, physical_pos.1 as i32);
-        handle
-            .emit("set_click_position", positions.clone())
-            .map_err(|e| e.to_string())?;
-    }
+    };
 
     window.close().map_err(|e| e.to_string())
 }

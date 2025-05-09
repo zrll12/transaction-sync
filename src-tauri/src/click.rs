@@ -6,9 +6,11 @@ use std::thread::sleep;
 use std::time::Duration;
 
 lazy_static! {
-    pub static ref DETECT_AREA: ((AtomicU32, AtomicU32), (AtomicU32, AtomicU32)) = (
-        (AtomicU32::new(0), AtomicU32::new(0)),
-        (AtomicU32::new(0), AtomicU32::new(0)),
+    pub static ref DETECT_AREA: ((AtomicU32, AtomicU32), (AtomicU32, AtomicU32), (AtomicU32, AtomicU32), (AtomicU32, AtomicU32)) = (
+        (AtomicU32::new(0), AtomicU32::new(0)), // 区域1的起始点
+        (AtomicU32::new(0), AtomicU32::new(0)), // 区域1的终点
+        (AtomicU32::new(0), AtomicU32::new(0)), // 区域2的起始点
+        (AtomicU32::new(0), AtomicU32::new(0)), // 区域2的终点
     );
     pub static ref CLICK_POSITION: Mutex<Vec<(i32, i32)>> = Mutex::new(vec![]);
     static ref MOUSE_POSITION_X: AtomicU32 = AtomicU32::new(0);

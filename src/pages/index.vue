@@ -10,20 +10,32 @@ type TeamMember = {
 }
 
 enum RootSelectType {
-  LT,
-  RB
+  LT1,
+  RB1,
+  LT2,
+  RB2
 }
 
 const teamMember = ref<TeamMember[]>([]);
 const rootPoint = reactive({
-  x1: 0,
-  y1: 0,
-  x2: 0,
-  y2: 0
+  area1: {
+    x1: 0,
+    y1: 0,
+    x2: 0,
+    y2: 0
+  },
+  area2: {
+    x1: 0,
+    y1: 0,
+    x2: 0,
+    y2: 0
+  }
 })
 
-const point1Text = computed(() => rootPoint.x1 > 0 && rootPoint.y1 > 0 ? `(${rootPoint.x1}, ${rootPoint.y1})` : '点击选择' )
-const point2Text = computed(() => rootPoint.x2 > 0 && rootPoint.y2 > 0 ? `(${rootPoint.x2}, ${rootPoint.y2})` : '点击选择' )
+const point1Text = computed(() => rootPoint.area1.x1 > 0 && rootPoint.area1.y1 > 0 ? `(${rootPoint.area1.x1}, ${rootPoint.area1.y1})` : '点击选择' )
+const point2Text = computed(() => rootPoint.area1.x2 > 0 && rootPoint.area1.y2 > 0 ? `(${rootPoint.area1.x2}, ${rootPoint.area1.y2})` : '点击选择' )
+const point3Text = computed(() => rootPoint.area2.x1 > 0 && rootPoint.area2.y1 > 0 ? `(${rootPoint.area2.x1}, ${rootPoint.area2.y1})` : '点击选择' )
+const point4Text = computed(() => rootPoint.area2.x2 > 0 && rootPoint.area2.y2 > 0 ? `(${rootPoint.area2.x2}, ${rootPoint.area2.y2})` : '点击选择' )
 
 const addTeamMember = () => {
   const last = teamMember.value[teamMember.value.length - 1];
@@ -52,7 +64,21 @@ const onClickTeamMemberSelect = async (id: number) => {
 }
 
 const rootSelectClick = async (type: RootSelectType) => {
-  const index = type === RootSelectType.LT ? 0 : 1;
+  let index;
+  switch(type) {
+    case RootSelectType.LT1:
+      index = 0;
+      break;
+    case RootSelectType.RB1:
+      index = 1;
+      break;
+    case RootSelectType.LT2:
+      index = 2;
+      break;
+    case RootSelectType.RB2:
+      index = 3;
+      break;
+  }
   await invoke('open_select_window', {index});
 }
 
@@ -62,14 +88,26 @@ const testClick = async () => {
 
 listen('set_detect_area1', (event) => {
   let payload = event.payload as number[];
-  rootPoint.x1 = payload[0];
-  rootPoint.y1 = payload[1];
+  rootPoint.area1.x1 = payload[0];
+  rootPoint.area1.y1 = payload[1];
 })
 
 listen('set_detect_area2', (event) => {
   let payload = event.payload as number[];
-  rootPoint.x2 = payload[0];
-  rootPoint.y2 = payload[1];
+  rootPoint.area1.x2 = payload[0];
+  rootPoint.area1.y2 = payload[1];
+})
+
+listen('set_detect_area3', (event) => {
+  let payload = event.payload as number[];
+  rootPoint.area2.x1 = payload[0];
+  rootPoint.area2.y1 = payload[1];
+})
+
+listen('set_detect_area4', (event) => {
+  let payload = event.payload as number[];
+  rootPoint.area2.x2 = payload[0];
+  rootPoint.area2.y2 = payload[1];
 })
 
 listen('set_click_position', (event) => {
@@ -94,17 +132,35 @@ listen('set_click_position', (event) => {
         <div class="w-full h-1px bg-zinc-500"></div>
         <p class="text-slate-200 font-sans">请检测队长的设置并同步</p>
         <div class="flex flex-col gap-4">
-        <div class="w-full grid grid-cols-2 justify-between items-center">
-            <span class="text-slate-200 font-sans">监控区域左上角</span>
-            <button @click="()=>rootSelectClick(RootSelectType.LT)" class="min-h-48px hover:text-blue-400 hover:border-blue-400 transition-all duration-200 cursor-pointer rounded-xl text-slate-200 text-xl bg-slate-800/50 border border-2px border-solid border-slate-600 hover:bg-slate-700/50 active:scale-95 font-sans">
-              {{ point1Text }}
-            </button>
+          <div class="space-y-2">
+            <h2 class="text-slate-200 font-sans text-lg">监控区域1</h2>
+            <div class="w-full grid grid-cols-2 justify-between items-center">
+              <span class="text-slate-200 font-sans">左上角</span>
+              <button @click="()=>rootSelectClick(RootSelectType.LT1)" class="min-h-48px hover:text-blue-400 hover:border-blue-400 transition-all duration-200 cursor-pointer rounded-xl text-slate-200 text-xl bg-slate-800/50 border border-2px border-solid border-slate-600 hover:bg-slate-700/50 active:scale-95 font-sans">
+                {{ point1Text }}
+              </button>
+            </div>
+            <div class="w-full grid grid-cols-2 justify-between items-center">
+              <span class="text-slate-200 font-sans">右下角</span>
+              <button @click="()=>rootSelectClick(RootSelectType.RB1)" class="min-h-48px hover:text-blue-400 hover:border-blue-400 transition-all duration-200 cursor-pointer rounded-xl text-slate-200 text-xl bg-slate-800/50 border border-2px border-solid border-slate-600 hover:bg-slate-700/50 active:scale-95 font-sans">
+                {{ point2Text }}
+              </button>
+            </div>
           </div>
-          <div class="w-full grid grid-cols-2 justify-between items-center">
-            <span class="text-slate-200 font-sans">监控区域右下角</span>
-            <button @click="()=>rootSelectClick(RootSelectType.RB)" class="min-h-48px hover:text-blue-400 hover:border-blue-400 transition-all duration-200 cursor-pointer rounded-xl text-slate-200 text-xl bg-slate-800/50 border border-2px border-solid border-slate-600 hover:bg-slate-700/50 active:scale-95 font-sans">
-              {{ point2Text }}
-            </button>
+          <div class="space-y-2">
+            <h2 class="text-slate-200 font-sans text-lg">监控区域2</h2>
+            <div class="w-full grid grid-cols-2 justify-between items-center">
+              <span class="text-slate-200 font-sans">左上角</span>
+              <button @click="()=>rootSelectClick(RootSelectType.LT2)" class="min-h-48px hover:text-blue-400 hover:border-blue-400 transition-all duration-200 cursor-pointer rounded-xl text-slate-200 text-xl bg-slate-800/50 border border-2px border-solid border-slate-600 hover:bg-slate-700/50 active:scale-95 font-sans">
+                {{ point3Text }}
+              </button>
+            </div>
+            <div class="w-full grid grid-cols-2 justify-between items-center">
+              <span class="text-slate-200 font-sans">右下角</span>
+              <button @click="()=>rootSelectClick(RootSelectType.RB2)" class="min-h-48px hover:text-blue-400 hover:border-blue-400 transition-all duration-200 cursor-pointer rounded-xl text-slate-200 text-xl bg-slate-800/50 border border-2px border-solid border-slate-600 hover:bg-slate-700/50 active:scale-95 font-sans">
+                {{ point4Text }}
+              </button>
+            </div>
           </div>
         </div>
       </div>
