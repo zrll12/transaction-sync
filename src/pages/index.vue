@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import {computed, onMounted, reactive, ref} from 'vue';
+import {computed, reactive, ref} from 'vue';
 import Trash from '../components/trash.vue';
 import {invoke} from "@tauri-apps/api/core";
 import {listen} from "@tauri-apps/api/event";
 
+// 类型定义
 enum Type {
   IDLE,
   PENDING,
@@ -11,37 +12,49 @@ enum Type {
 
 type TeamMember = {
   id: number;
-  point: [number,number];
+  point: [number, number];
   key: string | null;
 }
 
 enum RootSelectType {
-  LT,
-  RB
+  LT1,
+  RB1,
+  LT2,
+  RB2
 }
 
+// 状态管理
 const bindType = ref(Type.IDLE);
 let curKey: string | null = null;
 let curBind = -1;
 const teamMember = ref<TeamMember[]>([]);
+
+// 区域坐标状态
 const rootPoint = reactive({
-  x1: 0,
-  y1: 0,
-  x2: 0,
-  y2: 0
+  area1: { x1: 0, y1: 0, x2: 0, y2: 0 },
+  area2: { x1: 0, y1: 0, x2: 0, y2: 0 }
 })
 
-const point1Text = computed(() => rootPoint.x1 > 0 && rootPoint.y1 > 0 ? `(${rootPoint.x1}, ${rootPoint.y1})` : '点击选择' )
-const point2Text = computed(() => rootPoint.x2 > 0 && rootPoint.y2 > 0 ? `(${rootPoint.x2}, ${rootPoint.y2})` : '点击选择' )
+// 计算属性
+const point1Text = computed(() => formatPointText(rootPoint.area1.x1, rootPoint.area1.y1));
+const point2Text = computed(() => formatPointText(rootPoint.area1.x2, rootPoint.area1.y2));
+const point3Text = computed(() => formatPointText(rootPoint.area2.x1, rootPoint.area2.y1));
+const point4Text = computed(() => formatPointText(rootPoint.area2.x2, rootPoint.area2.y2));
 
+// 工具函数
+function formatPointText(x: number, y: number): string {
+  return x > 0 && y > 0 ? `(${x}, ${y})` : '点击选择';
+}
+
+// 队员管理
 const addTeamMember = () => {
   const last = teamMember.value[teamMember.value.length - 1];
-  let id = last ? last.id + 1 : 1;
+  const id = last ? last.id + 1 : 1;
   teamMember.value.push({
     id,
-    point: [0,0],
+    point: [0, 0],
     key: null
-  })
+  });
 }
 
 const getMemberText = (id: number) => {
@@ -55,15 +68,29 @@ const getMemberText = (id: number) => {
 
 const removeTeamMember = (id: number) => {
   teamMember.value = teamMember.value.filter((member) => member.id !== id);
-  invoke("delete_click_position", {index: id - 1});
+  invoke("delete_click_position", {index: id});
 }
 const onClickTeamMemberSelect = async (id: number) => {
-  await invoke('open_select_window', {index: id + 1});
+  await invoke('open_select_window', {index: id, labelType: "left"});
 }
 
 const rootSelectClick = async (type: RootSelectType) => {
-  const index = type === RootSelectType.LT ? 0 : 1;
-  await invoke('open_select_window', {index});
+  let index;
+  switch(type) {
+    case RootSelectType.LT1:
+      index = 0;
+      break;
+    case RootSelectType.RB1:
+      index = 1;
+      break;
+    case RootSelectType.LT2:
+      index = 2;
+      break;
+    case RootSelectType.RB2:
+      index = 3;
+      break;
+  }
+  await invoke('open_select_window', {index, labelType: "caption"});
 }
 
 const testClick = async () => {
@@ -100,20 +127,32 @@ const bindKey = (id: number, char: string) => {
 
 listen('set_detect_area1', (event) => {
   let payload = event.payload as number[];
-  rootPoint.x1 = payload[0];
-  rootPoint.y1 = payload[1];
+  rootPoint.area1.x1 = payload[0];
+  rootPoint.area1.y1 = payload[1];
 })
 
 listen('set_detect_area2', (event) => {
   let payload = event.payload as number[];
-  rootPoint.x2 = payload[0];
-  rootPoint.y2 = payload[1];
+  rootPoint.area1.x2 = payload[0];
+  rootPoint.area1.y2 = payload[1];
 })
 
-listen('set_click_position', (event) => {
+listen('set_detect_area3', (event) => {
+  let payload = event.payload as number[];
+  rootPoint.area2.x1 = payload[0];
+  rootPoint.area2.y1 = payload[1];
+})
+
+listen('set_detect_area4', (event) => {
+  let payload = event.payload as number[];
+  rootPoint.area2.x2 = payload[0];
+  rootPoint.area2.y2 = payload[1];
+})
+
+listen('set_left_click_position', (event) => {
   const positions = event.payload as [number, number][];
   positions.forEach(([x, y], index) => {
-    const memberId = index + 1;
+    const memberId = index;
     const memberIndex = teamMember.value.findIndex(m => m.id === memberId);
     if (memberIndex !== -1) {
       teamMember.value[memberIndex].point = [x, y];
@@ -132,17 +171,35 @@ listen('set_click_position', (event) => {
         <div class="w-full h-1px bg-zinc-500"></div>
         <p class="text-slate-200 font-sans">请检测队长的设置并同步</p>
         <div class="flex flex-col gap-4">
-        <div class="w-full grid grid-cols-2 justify-between items-center">
-            <span class="text-slate-200 font-sans">监控区域左上角</span>
-            <button @click="()=>rootSelectClick(RootSelectType.LT)" class="min-h-48px hover:text-blue-400 hover:border-blue-400 transition-all duration-200 cursor-pointer rounded-xl text-slate-200 text-xl bg-slate-800/50 border border-2px border-solid border-slate-600 hover:bg-slate-700/50 active:scale-95 font-sans">
-              {{ point1Text }}
-            </button>
+          <div class="space-y-2">
+            <h2 class="text-slate-200 font-sans text-lg">监控区域1</h2>
+            <div class="w-full grid grid-cols-2 justify-between items-center">
+              <span class="text-slate-200 font-sans">左上角</span>
+              <button @click="()=>rootSelectClick(RootSelectType.LT1)" class="min-h-48px hover:text-blue-400 hover:border-blue-400 transition-all duration-200 cursor-pointer rounded-xl text-slate-200 text-xl bg-slate-800/50 border border-2px border-solid border-slate-600 hover:bg-slate-700/50 active:scale-95 font-sans">
+                {{ point1Text }}
+              </button>
+            </div>
+            <div class="w-full grid grid-cols-2 justify-between items-center">
+              <span class="text-slate-200 font-sans">右下角</span>
+              <button @click="()=>rootSelectClick(RootSelectType.RB1)" class="min-h-48px hover:text-blue-400 hover:border-blue-400 transition-all duration-200 cursor-pointer rounded-xl text-slate-200 text-xl bg-slate-800/50 border border-2px border-solid border-slate-600 hover:bg-slate-700/50 active:scale-95 font-sans">
+                {{ point2Text }}
+              </button>
+            </div>
           </div>
-          <div class="w-full grid grid-cols-2 justify-between items-center">
-            <span class="text-slate-200 font-sans">监控区域右下角</span>
-            <button @click="()=>rootSelectClick(RootSelectType.RB)" class="min-h-48px hover:text-blue-400 hover:border-blue-400 transition-all duration-200 cursor-pointer rounded-xl text-slate-200 text-xl bg-slate-800/50 border border-2px border-solid border-slate-600 hover:bg-slate-700/50 active:scale-95 font-sans">
-              {{ point2Text }}
-            </button>
+          <div class="space-y-2">
+            <h2 class="text-slate-200 font-sans text-lg">监控区域2</h2>
+            <div class="w-full grid grid-cols-2 justify-between items-center">
+              <span class="text-slate-200 font-sans">左上角</span>
+              <button @click="()=>rootSelectClick(RootSelectType.LT2)" class="min-h-48px hover:text-blue-400 hover:border-blue-400 transition-all duration-200 cursor-pointer rounded-xl text-slate-200 text-xl bg-slate-800/50 border border-2px border-solid border-slate-600 hover:bg-slate-700/50 active:scale-95 font-sans">
+                {{ point3Text }}
+              </button>
+            </div>
+            <div class="w-full grid grid-cols-2 justify-between items-center">
+              <span class="text-slate-200 font-sans">右下角</span>
+              <button @click="()=>rootSelectClick(RootSelectType.RB2)" class="min-h-48px hover:text-blue-400 hover:border-blue-400 transition-all duration-200 cursor-pointer rounded-xl text-slate-200 text-xl bg-slate-800/50 border border-2px border-solid border-slate-600 hover:bg-slate-700/50 active:scale-95 font-sans">
+                {{ point4Text }}
+              </button>
+            </div>
           </div>
         </div>
       </div>
