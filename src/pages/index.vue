@@ -4,6 +4,7 @@ import Trash from '../components/trash.vue';
 import {invoke} from "@tauri-apps/api/core";
 import {listen} from "@tauri-apps/api/event";
 
+// 类型定义
 enum Type {
   IDLE,
   PENDING,
@@ -11,7 +12,7 @@ enum Type {
 
 type TeamMember = {
   id: number;
-  point: [number,number];
+  point: [number, number];
   key: string | null;
 }
 
@@ -22,38 +23,38 @@ enum RootSelectType {
   RB2
 }
 
+// 状态管理
 const bindType = ref(Type.IDLE);
 let curKey: string | null = null;
 let curBind = -1;
 const teamMember = ref<TeamMember[]>([]);
+
+// 区域坐标状态
 const rootPoint = reactive({
-  area1: {
-    x1: 0,
-    y1: 0,
-    x2: 0,
-    y2: 0
-  },
-  area2: {
-    x1: 0,
-    y1: 0,
-    x2: 0,
-    y2: 0
-  }
+  area1: { x1: 0, y1: 0, x2: 0, y2: 0 },
+  area2: { x1: 0, y1: 0, x2: 0, y2: 0 }
 })
 
-const point1Text = computed(() => rootPoint.area1.x1 > 0 && rootPoint.area1.y1 > 0 ? `(${rootPoint.area1.x1}, ${rootPoint.area1.y1})` : '点击选择' )
-const point2Text = computed(() => rootPoint.area1.x2 > 0 && rootPoint.area1.y2 > 0 ? `(${rootPoint.area1.x2}, ${rootPoint.area1.y2})` : '点击选择' )
-const point3Text = computed(() => rootPoint.area2.x1 > 0 && rootPoint.area2.y1 > 0 ? `(${rootPoint.area2.x1}, ${rootPoint.area2.y1})` : '点击选择' )
-const point4Text = computed(() => rootPoint.area2.x2 > 0 && rootPoint.area2.y2 > 0 ? `(${rootPoint.area2.x2}, ${rootPoint.area2.y2})` : '点击选择' )
+// 计算属性
+const point1Text = computed(() => formatPointText(rootPoint.area1.x1, rootPoint.area1.y1));
+const point2Text = computed(() => formatPointText(rootPoint.area1.x2, rootPoint.area1.y2));
+const point3Text = computed(() => formatPointText(rootPoint.area2.x1, rootPoint.area2.y1));
+const point4Text = computed(() => formatPointText(rootPoint.area2.x2, rootPoint.area2.y2));
 
+// 工具函数
+function formatPointText(x: number, y: number): string {
+  return x > 0 && y > 0 ? `(${x}, ${y})` : '点击选择';
+}
+
+// 队员管理
 const addTeamMember = () => {
   const last = teamMember.value[teamMember.value.length - 1];
-  let id = last ? last.id + 1 : 1;
+  const id = last ? last.id + 1 : 1;
   teamMember.value.push({
     id,
-    point: [0,0],
+    point: [0, 0],
     key: null
-  })
+  });
 }
 
 const getMemberText = (id: number) => {
