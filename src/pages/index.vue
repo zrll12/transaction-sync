@@ -12,7 +12,10 @@ enum Type {
 
 type TeamMember = {
   id: number;
-  point: [number, number];
+  point: [
+    [number, number],
+    [number, number]
+  ];
   key: string | null;
 }
 
@@ -52,17 +55,25 @@ const addTeamMember = () => {
   const id = last ? last.id + 1 : 1;
   teamMember.value.push({
     id,
-    point: [0, 0],
+    point: [
+      [0,0],
+      [0,0]
+    ],
     key: null
   });
 }
 
-const getMemberText = (id: number) => {
+const getMemberText = (id: number, type: 'TL' | 'BR') => {
   const member = teamMember.value.filter(member => member.id == id)[0];
   if (!member){
     return;
   }
-  const [x,y] = member.point;
+  const [tl,br] = member.point;
+  if (type ==='TL') {
+    const [x,y] = tl;
+    return x > 0 && y > 0 ? `(${x}, ${y})` : '请选择'
+  }
+  const [x,y] = br;
   return x > 0 && y > 0 ? `(${x}, ${y})` : '请选择'
 }
 
@@ -155,7 +166,10 @@ listen('set_left_click_position', (event) => {
     const memberId = index;
     const memberIndex = teamMember.value.findIndex(m => m.id === memberId);
     if (memberIndex !== -1) {
-      teamMember.value[memberIndex].point = [x, y];
+      teamMember.value[memberIndex].point = [
+        [x,y],
+        [0,0]
+      ];
     }
   });
 })
@@ -205,17 +219,27 @@ listen('set_left_click_position', (event) => {
       </div>
     </div>
     <div class="w-full space-y-4 mt-40px">
-      <div class="w-full p-4 bg-slate-100/10 rounded-3xl box-border flex items-center justify-around gap-4 shadow-md backdrop-blur-sm border border-slate-700/30 transition-all hover:bg-slate-700/20" v-for="member of teamMember" :key="member.id">
-        <div>
+      <div class="w-full p-4 bg-slate-100/10 rounded-3xl box-border flex flex-col justify-around gap-4 shadow-md backdrop-blur-sm border border-slate-700/30 transition-all hover:bg-slate-700/20" v-for="member of teamMember" :key="member.id">
+        <div class="flex items-center justify-between w-full">
           <span class="text-zinc-200 font-sans">队员 {{ member.id }}</span>
-        </div>
-        <div class="grow flex items-center justify-end">
-          <button @click="()=>onClickTeamMemberSelect(member.id)" class="h-48px px-4 hover:text-blue-400 hover:border-blue-400 transition-all duration-200 cursor-pointer rounded-xl text-slate-200 text-xl bg-slate-800/50 border border-2px border-solid border-slate-600 hover:bg-slate-700/50 active:scale-95 font-sans">
-            {{ getMemberText(member.id) }}
-          </button>
           <button @click="() => removeTeamMember(member.id)" class="h-48px w-48px aspect-square bg-transparent border-none text-slate-200 font-sans">
             <Trash class="size-full hover:bg-red-500/20 cursor-pointer rounded" />
           </button>
+        </div>
+        <div class="w-full flex justify-between">
+          <span class="text-white">左上角</span>
+          <button @click="()=>onClickTeamMemberSelect(member.id)" class="h-48px px-4 hover:text-blue-400 hover:border-blue-400 transition-all duration-200 cursor-pointer rounded-xl text-slate-200 text-xl bg-slate-800/50 border border-2px border-solid border-slate-600 hover:bg-slate-700/50 active:scale-95 font-sans">
+            {{ getMemberText(member.id, 'TL') }}
+          </button>
+        </div>
+        <div class="w-full flex justify-between">
+          <span class="text-white">右下角</span>
+          <button @click="()=>onClickTeamMemberSelect(member.id)" class="h-48px px-4 hover:text-blue-400 hover:border-blue-400 transition-all duration-200 cursor-pointer rounded-xl text-slate-200 text-xl bg-slate-800/50 border border-2px border-solid border-slate-600 hover:bg-slate-700/50 active:scale-95 font-sans">
+            {{ getMemberText(member.id, 'BR') }}
+          </button>
+        </div>
+        <div class="w-full flex justify-between">
+          <span class="text-white">按键绑定</span>
           <button @click="()=>onClickBind(member.id)" class="h-48px px-4 hover:text-blue-400 hover:border-blue-400 transition-all duration-200 cursor-pointer rounded-xl text-slate-200 text-xl bg-slate-800/50 border border-2px border-solid border-slate-600 hover:bg-slate-700/50 active:scale-95 font-sans">
             <span v-if="member.id !== curBind && member.key === null">点击绑定</span>
             <span v-if="member.id === curBind">等待键入</span>
