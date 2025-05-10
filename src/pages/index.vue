@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {computed, onMounted, reactive, ref} from 'vue';
+import {computed, reactive, ref} from 'vue';
 import Trash from '../components/trash.vue';
 import {invoke} from "@tauri-apps/api/core";
 import {listen} from "@tauri-apps/api/event";
@@ -67,10 +67,10 @@ const getMemberText = (id: number) => {
 
 const removeTeamMember = (id: number) => {
   teamMember.value = teamMember.value.filter((member) => member.id !== id);
-  invoke("delete_click_position", {index: id - 1});
+  invoke("delete_click_position", {index: id});
 }
 const onClickTeamMemberSelect = async (id: number) => {
-  await invoke('open_select_window', {index: id + 1});
+  await invoke('open_select_window', {index: id, labelType: "left"});
 }
 
 const rootSelectClick = async (type: RootSelectType) => {
@@ -89,7 +89,7 @@ const rootSelectClick = async (type: RootSelectType) => {
       index = 3;
       break;
   }
-  await invoke('open_select_window', {index});
+  await invoke('open_select_window', {index, labelType: "caption"});
 }
 
 const testClick = async () => {
@@ -148,10 +148,10 @@ listen('set_detect_area4', (event) => {
   rootPoint.area2.y2 = payload[1];
 })
 
-listen('set_click_position', (event) => {
+listen('set_left_click_position', (event) => {
   const positions = event.payload as [number, number][];
   positions.forEach(([x, y], index) => {
-    const memberId = index + 1;
+    const memberId = index;
     const memberIndex = teamMember.value.findIndex(m => m.id === memberId);
     if (memberIndex !== -1) {
       teamMember.value[memberIndex].point = [x, y];
