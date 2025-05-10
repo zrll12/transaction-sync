@@ -1,12 +1,18 @@
 <script setup lang="ts">
-import {computed, reactive, ref} from 'vue';
+import {computed, onMounted, reactive, ref} from 'vue';
 import Trash from '../components/trash.vue';
 import {invoke} from "@tauri-apps/api/core";
 import {listen} from "@tauri-apps/api/event";
 
+enum Type {
+  IDLE,
+  PENDING,
+}
+
 type TeamMember = {
   id: number;
   point: [number,number];
+  key: string | null;
 }
 
 enum RootSelectType {
@@ -14,6 +20,9 @@ enum RootSelectType {
   RB
 }
 
+const bindType = ref(Type.IDLE);
+let curKey: string | null = null;
+let curBind = -1;
 const teamMember = ref<TeamMember[]>([]);
 const rootPoint = reactive({
   x1: 0,
@@ -30,7 +39,8 @@ const addTeamMember = () => {
   let id = last ? last.id + 1 : 1;
   teamMember.value.push({
     id,
-    point: [0,0]
+    point: [0,0],
+    key: null
   })
 }
 
@@ -58,6 +68,34 @@ const rootSelectClick = async (type: RootSelectType) => {
 
 const testClick = async () => {
   await invoke('move_mouse');
+}
+const onClickBind = (id: number) => {
+  curKey = null;
+  bindType.value = Type.PENDING;
+  curBind = id;
+  let abort = new AbortController();
+  window.addEventListener('keydown', (ev) => {
+    bindKey(id,ev.key);
+    abort.abort();
+  }, {signal: abort.signal})
+}
+
+const bindKey = (id: number, char: string) => {
+  if(bindType.value === Type.IDLE) {
+    return;
+  }
+  teamMember.value = teamMember.value.map((member) => {
+    if (member.id === id) {
+      return {
+        ...member,
+        key: char
+      }
+    }
+    return member;
+  })
+  curKey = null;
+  curBind = -1;
+  bindType.value = Type.IDLE;
 }
 
 listen('set_detect_area1', (event) => {
@@ -114,14 +152,19 @@ listen('set_click_position', (event) => {
         <div>
           <span class="text-zinc-200 font-sans">队员 {{ member.id }}</span>
         </div>
-        <div class="grow flex">
-        <button @click="()=>onClickTeamMemberSelect(member.id)" class="h-48px grow hover:text-blue-400 hover:border-blue-400 transition-all duration-200 cursor-pointer rounded-xl text-slate-200 text-xl bg-slate-800/50 border border-2px border-solid border-slate-600 hover:bg-slate-700/50 active:scale-95 font-sans">
-          {{ getMemberText(member.id) }}
-        </button>
-        <button @click="() => removeTeamMember(member.id)" class="h-48px w-48px aspect-square bg-transparent border-none text-slate-200 font-sans">
-          <Trash class="size-full hover:bg-red-500/20 cursor-pointer rounded" />
-        </button>
-      </div>
+        <div class="grow flex items-center justify-end">
+          <button @click="()=>onClickTeamMemberSelect(member.id)" class="h-48px px-4 hover:text-blue-400 hover:border-blue-400 transition-all duration-200 cursor-pointer rounded-xl text-slate-200 text-xl bg-slate-800/50 border border-2px border-solid border-slate-600 hover:bg-slate-700/50 active:scale-95 font-sans">
+            {{ getMemberText(member.id) }}
+          </button>
+          <button @click="() => removeTeamMember(member.id)" class="h-48px w-48px aspect-square bg-transparent border-none text-slate-200 font-sans">
+            <Trash class="size-full hover:bg-red-500/20 cursor-pointer rounded" />
+          </button>
+          <button @click="()=>onClickBind(member.id)" class="h-48px px-4 hover:text-blue-400 hover:border-blue-400 transition-all duration-200 cursor-pointer rounded-xl text-slate-200 text-xl bg-slate-800/50 border border-2px border-solid border-slate-600 hover:bg-slate-700/50 active:scale-95 font-sans">
+            <span v-if="member.id !== curBind && member.key === null">点击绑定</span>
+            <span v-if="member.id === curBind">等待键入</span>
+            <span v-if="member.id !== curBind && member.key">{{member.key}}</span>
+          </button>
+        </div>
       </div>
     </div>
     <div class="w-full h-fit mt-4 space-y-4">
