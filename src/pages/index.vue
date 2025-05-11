@@ -16,7 +16,7 @@ type TeamMember = {
     [number, number],
     [number, number]
   ];
-  key: string | null;
+  key: {state: Type, char: string|null}[];
 }
 
 enum RootSelectType {
@@ -29,7 +29,7 @@ enum RootSelectType {
 // 状态管理
 const bindType = ref(Type.IDLE);
 let curKey: string | null = null;
-let curBind = -1;
+const curBind = ref(-1);
 const teamMember = ref<TeamMember[]>([]);
 
 // 区域坐标状态
@@ -59,29 +59,24 @@ const addTeamMember = () => {
       [0,0],
       [0,0]
     ],
-    key: null
+    key: [{state: Type.IDLE, char: null}, {state: Type.IDLE, char: null}]
   });
 }
 
-const getMemberText = (id: number, type: 'TL' | 'BR') => {
+const getMemberText = (id: number, idx: number) => {
   const member = teamMember.value.filter(member => member.id == id)[0];
   if (!member){
     return;
   }
-  const [tl,br] = member.point;
-  if (type ==='TL') {
-    const [x,y] = tl;
-    return x > 0 && y > 0 ? `(${x}, ${y})` : '请选择'
-  }
-  const [x,y] = br;
-  return x > 0 && y > 0 ? `(${x}, ${y})` : '请选择'
+  const [x,y] = member.point[idx];
+  return x > 0 && y > 0 ? `(${x}, ${y})` : '请选择坐标';
 }
 
 const removeTeamMember = (id: number) => {
   teamMember.value = teamMember.value.filter((member) => member.id !== id);
   invoke("delete_click_position", {index: id});
 }
-const onClickTeamMemberSelect = async (id: number) => {
+const onClickTeamMemberSelect = async (id: number, pointIdx: number) => {
   await invoke('open_select_window', {index: id, labelType: "left"});
 }
 
@@ -107,32 +102,47 @@ const rootSelectClick = async (type: RootSelectType) => {
 const testClick = async () => {
   await invoke('move_mouse');
 }
-const onClickBind = (id: number) => {
-  curKey = null;
-  bindType.value = Type.PENDING;
-  curBind = id;
+const onClickBind = (id: number, idx: 0 | 1) => {
+  if (curBind.value !== -1) {
+    return;
+  }
+  if (
+    teamMember.value.filter(member => member.id)[0].key[idx].state !== Type.IDLE
+  ) {
+    return;
+  }
+  teamMember.value = teamMember.value.map((member) => {
+    if (member.id === id) {
+      member.key[idx] = {state: Type.PENDING, char: null}
+      return {
+        ...member
+      }
+    }
+    return member;
+  })
   let abort = new AbortController();
   window.addEventListener('keydown', (ev) => {
-    bindKey(id,ev.key);
+    bindType.value = Type.PENDING;
+    bindKey(id,ev.key, idx);
     abort.abort();
   }, {signal: abort.signal})
 }
 
-const bindKey = (id: number, char: string) => {
+const bindKey = (id: number, char: string, idx = 0) => {
   if(bindType.value === Type.IDLE) {
     return;
   }
   teamMember.value = teamMember.value.map((member) => {
     if (member.id === id) {
+      member.key[idx] = {state: Type.IDLE, char}
       return {
         ...member,
-        key: char
       }
     }
     return member;
   })
   curKey = null;
-  curBind = -1;
+  curBind.value = -1;
   bindType.value = Type.IDLE;
 }
 
@@ -166,10 +176,7 @@ listen('set_left_click_position', (event) => {
     const memberId = index;
     const memberIndex = teamMember.value.findIndex(m => m.id === memberId);
     if (memberIndex !== -1) {
-      teamMember.value[memberIndex].point = [
-        [x,y],
-        [0,0]
-      ];
+      teamMember.value[memberIndex].point = [x,y];
     }
   });
 })
@@ -222,28 +229,45 @@ listen('set_left_click_position', (event) => {
       <div class="w-full p-4 bg-slate-100/10 rounded-3xl box-border flex flex-col justify-around gap-4 shadow-md backdrop-blur-sm border border-slate-700/30 transition-all hover:bg-slate-700/20" v-for="member of teamMember" :key="member.id">
         <div class="flex items-center justify-between w-full">
           <span class="text-zinc-200 font-sans">队员 {{ member.id }}</span>
-          <button @click="() => removeTeamMember(member.id)" class="h-48px w-48px aspect-square bg-transparent border-none text-slate-200 font-sans">
-            <Trash class="size-full hover:bg-red-500/20 cursor-pointer rounded" />
+          <div class="w-fit flex items-center">
+            <button @click="() => removeTeamMember(member.id)" class="h-48px w-48px aspect-square bg-transparent border-none text-slate-200 font-sans">
+              <Trash class="size-full hover:bg-red-500/20 cursor-pointer rounded" />
+            </button>
+          </div>
+        </div>
+        <div class="w-full grid grid-cols-2 gap-4">
+          <button
+            @click="()=>onClickTeamMemberSelect(member.id,0)"
+            class="shrink h-48px px-4 hover:text-blue-400 hover:border-blue-400 transition-all duration-200 cursor-pointer rounded-xl text-slate-200 text-xl bg-slate-800/50 border border-2px border-solid border-slate-600 hover:bg-slate-700/50 active:scale-95 font-sans"
+          >
+            {{ getMemberText(member.id,0) }}
+          </button>
+          <button @click="()=>onClickBind(member.id, 0)" class="h-48px px-4 hover:text-blue-400 hover:border-blue-400 transition-all duration-200 cursor-pointer rounded-xl text-slate-200 text-xl bg-slate-800/50 border border-2px border-solid border-slate-600 hover:bg-slate-700/50 active:scale-95 font-sans">
+            <span v-if="member.key[0].state === Type.IDLE && !member.key[0].char">
+              点击绑定按键
+            </span>
+            <span v-if="member.key[0].state === Type.PENDING">
+              等待输入
+            </span> 
+            <span v-if="member.key[0].state === Type.IDLE && member.key[0].char">
+              {{member.key[0].char}}
+            </span>
           </button>
         </div>
-        <div class="w-full flex justify-between">
-          <span class="text-white">左上角</span>
-          <button @click="()=>onClickTeamMemberSelect(member.id)" class="h-48px px-4 hover:text-blue-400 hover:border-blue-400 transition-all duration-200 cursor-pointer rounded-xl text-slate-200 text-xl bg-slate-800/50 border border-2px border-solid border-slate-600 hover:bg-slate-700/50 active:scale-95 font-sans">
-            {{ getMemberText(member.id, 'TL') }}
+        <div class="w-full grid grid-cols-2 gap-4">
+          <button @click="()=>onClickTeamMemberSelect(member.id, 1)" class="h-48px px-4 hover:text-blue-400 hover:border-blue-400 transition-all duration-200 cursor-pointer rounded-xl text-slate-200 text-xl bg-slate-800/50 border border-2px border-solid border-slate-600 hover:bg-slate-700/50 active:scale-95 font-sans">
+            {{ getMemberText(member.id,1) }}
           </button>
-        </div>
-        <div class="w-full flex justify-between">
-          <span class="text-white">右下角</span>
-          <button @click="()=>onClickTeamMemberSelect(member.id)" class="h-48px px-4 hover:text-blue-400 hover:border-blue-400 transition-all duration-200 cursor-pointer rounded-xl text-slate-200 text-xl bg-slate-800/50 border border-2px border-solid border-slate-600 hover:bg-slate-700/50 active:scale-95 font-sans">
-            {{ getMemberText(member.id, 'BR') }}
-          </button>
-        </div>
-        <div class="w-full flex justify-between">
-          <span class="text-white">按键绑定</span>
-          <button @click="()=>onClickBind(member.id)" class="h-48px px-4 hover:text-blue-400 hover:border-blue-400 transition-all duration-200 cursor-pointer rounded-xl text-slate-200 text-xl bg-slate-800/50 border border-2px border-solid border-slate-600 hover:bg-slate-700/50 active:scale-95 font-sans">
-            <span v-if="member.id !== curBind && member.key === null">点击绑定</span>
-            <span v-if="member.id === curBind">等待键入</span>
-            <span v-if="member.id !== curBind && member.key">{{member.key}}</span>
+          <button @click="()=>onClickBind(member.id, 1)" class="h-48px px-4 hover:text-blue-400 hover:border-blue-400 transition-all duration-200 cursor-pointer rounded-xl text-slate-200 text-xl bg-slate-800/50 border border-2px border-solid border-slate-600 hover:bg-slate-700/50 active:scale-95 font-sans">
+            <span v-if="member.key[1].state === Type.IDLE && !member.key[1].char">
+              点击绑定按键
+            </span>
+            <span v-if="member.key[1].state === Type.PENDING">
+              等待输入
+            </span> 
+            <span v-if="member.key[1].state === Type.IDLE && member.key[1].char">
+              {{member.key[1].char}}
+            </span>
           </button>
         </div>
       </div>
