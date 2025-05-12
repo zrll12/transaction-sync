@@ -11,6 +11,7 @@ use std::sync::Mutex;
 use tauri::{Emitter, WebviewUrl, WebviewWindowBuilder};
 use xcap::image::GenericImageView;
 use xcap::Monitor;
+use crate::click::{click_all_left, click_all_right};
 
 lazy_static! {
     static ref DETECTION_STATE: Mutex<DetectState> = Mutex::new(DetectState::Idle);
@@ -126,8 +127,10 @@ pub fn init(app_handle: tauri::AppHandle) {
                 // 2. 如果是左检测状态但没有检测到物体，则设置为idle状态
                 if *state == DetectState::Idle && left > 0 {
                     *state = DetectState::LeftDetected;
+                    click_all_left();
                 } else if *state == DetectState::LeftDetected && left == 0 {
                     *state = DetectState::Idle;
+                    click_all_right();
                 }
             }
 
@@ -148,8 +151,10 @@ pub fn init(app_handle: tauri::AppHandle) {
                 .unwrap();
                 if *state == DetectState::Idle && right > 0 {
                     *state = DetectState::RightDetected;
+                    click_all_right();
                 } else if *state == DetectState::RightDetected && right == 0 {
                     *state = DetectState::Idle;
+                    click_all_left();
                 }
             }
 
