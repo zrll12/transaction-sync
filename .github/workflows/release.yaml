@@ -38,10 +38,6 @@ jobs:
                       brew: "@4"
                       features: opencv-4
                 os:
-                    - build: macos
-                      image: macos-latest
-                      family: osx
-                      target: x86_64-apple-darwin
                     - build: win-msvc
                       image: windows-2019
                       family: windows
