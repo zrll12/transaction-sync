@@ -65,12 +65,6 @@ jobs:
         steps:
             - uses: actions/checkout@v2
 
-            - name: Cache OpenCV dependencies
-              uses: actions/cache@v1
-              with:
-                  path: ~/build
-                  key: ${{ runner.os }}-${{ matrix.version.opencv }}-build
-
             - name: Install OpenCV dependencies
               run: ci/install.sh
               shell: bash
@@ -80,9 +74,6 @@ jobs:
               with:
                   toolchain: ${{ matrix.rust }}
                   default: true
-
-            - name: Caches Rust
-              uses: Swatinem/rust-cache@v1
 
             - name: Build
               run: |
