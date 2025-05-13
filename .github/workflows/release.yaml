@@ -67,39 +67,21 @@ jobs:
               with:
                   toolchain: ${{ matrix.rust }}
                   default: true
+            - uses: pnpm/action-setup@v4
+              name: Install pnpm
+              with:
+                version: 10
+                run_install: false
+
+            - name: Install Node.js
+              uses: actions/setup-node@v4
+              with:
+                node-version: 20
+            - name: Install dependencies
+              run: pnpm install
 
             - name: Build
               run: |
                   source ./ci/setup-env.sh
-                  cargo build --release
+                  pnpm tauri build
               shell: bash
-
-            - name: Build archive
-              shell: bash
-              run: |
-                  staging="build-${{ matrix.os.build }}-${{ needs.create-release.outputs.version }}"
-                  mkdir -p "$staging"
-                  cp {README.md,LICENSE.md} "$staging/"
-                  if [ "${{ matrix.os.family }}" = "windows" ]; then
-
-                    cp "target/release/rust-opencv-ci-playground.exe" "$staging/"
-                    cp "C:\tools\opencv\build\x64\vc15\bin\opencv_world412.dll" "$staging/"
-
-                    7z a "$staging.zip" "$staging"
-                    echo "ASSET=$staging.zip" >> $GITHUB_ENV
-                  else
-
-                    cp "target/release/rust-opencv-ci-playground" "$staging/"
-
-                    tar czf "$staging.tar.gz" "$staging"
-                    echo "ASSET=$staging.tar.gz" >> $GITHUB_ENV
-                  fi
-            - name: Upload release archive
-              uses: actions/upload-release-asset@v1.0.1
-              env:
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-              with:
-                  upload_url: ${{ needs.create-release.outputs.upload_url }}
-                  asset_path: ${{ env.ASSET }}
-                  asset_name: ${{ env.ASSET }}
-                  asset_content_type: application/octet-stream

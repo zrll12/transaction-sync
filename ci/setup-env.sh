@@ -18,8 +18,6 @@ if [[ "$OS_FAMILY" == "windows" ]]; then
 		echo "=== Installed vcpkg packages:"
 		"$VCPKG_ROOT/vcpkg" list
 	fi
-	echo "=== Installed chocolatey packages:"
-	choco list --local-only
 elif [[ "$OS_FAMILY" == "osx" ]]; then
 	CARGO_FEATURES="$CARGO_FEATURES,contrib"
 	toolchain_path="$(xcode-select --print-path)/Toolchains/XcodeDefault.xctoolchain/"
