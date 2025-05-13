@@ -2,7 +2,7 @@
 import {computed, reactive, ref} from 'vue';
 import Trash from '../components/trash.vue';
 import {invoke} from "@tauri-apps/api/core";
-import {listen} from "@tauri-apps/api/event";
+import {emit, listen} from "@tauri-apps/api/event";
 
 // 类型定义
 enum Type {
@@ -77,7 +77,7 @@ const removeTeamMember = (id: number) => {
   invoke("delete_click_position", {index: id});
 }
 const onClickTeamMemberSelect = async (id: number, pointIdx: number) => {
-  await invoke('open_select_window', {index: id, labelType: "left"});
+  await invoke('open_select_window', {index: id, labelType: pointIdx === 0 ? "left" : "right"});
 }
 
 const rootSelectClick = async (type: RootSelectType) => {
@@ -132,6 +132,7 @@ const bindKey = (id: number, char: string, idx = 0) => {
   if(bindType.value === Type.IDLE) {
     return;
   }
+  invoke("set_key_bind", {id, char, left: idx == 0});
   teamMember.value = teamMember.value.map((member) => {
     if (member.id === id) {
       member.key[idx] = {state: Type.IDLE, char}
@@ -176,7 +177,18 @@ listen('set_left_click_position', (event) => {
     const memberId = index;
     const memberIndex = teamMember.value.findIndex(m => m.id === memberId);
     if (memberIndex !== -1) {
-      teamMember.value[memberIndex].point = [x,y];
+      teamMember.value[memberIndex].point[0] = [x,y];
+    }
+  });
+})
+
+listen('set_right_click_position', (event) => {
+  const positions = event.payload as [number, number][];
+  positions.forEach(([x, y], index) => {
+    const memberId = index;
+    const memberIndex = teamMember.value.findIndex(m => m.id === memberId);
+    if (memberIndex !== -1) {
+      teamMember.value[memberIndex].point[1] = [x,y];
     }
   });
 })
@@ -185,7 +197,7 @@ listen('set_left_click_position', (event) => {
 
 <template>
   <div class="w-full h-full bg-gradient-to-br from-slate-900 to-slate-800 font-sans text-base leading-normal">
-  <div class="h-full max-w-400px overflow-auto mx-auto py-32px box-border px-4">
+  <div class="h-full overflow-auto mx-auto py-32px box-border px-4">
     <div class="w-full">
       <div class="w-full h-fit box-border p-6 bg-slate-100/10 rounded-3xl shadow-lg backdrop-blur-sm border border-slate-700/30">
         <h1 class="text-slate-200 text-base leading-none font-sans">队长设置</h1>
@@ -240,7 +252,7 @@ listen('set_left_click_position', (event) => {
             @click="()=>onClickTeamMemberSelect(member.id,0)"
             class="shrink h-48px px-4 hover:text-blue-400 hover:border-blue-400 transition-all duration-200 cursor-pointer rounded-xl text-slate-200 text-xl bg-slate-800/50 border border-2px border-solid border-slate-600 hover:bg-slate-700/50 active:scale-95 font-sans"
           >
-            {{ getMemberText(member.id,0) }}
+            {{ getMemberText(member.id,0) }} 左侧
           </button>
           <button @click="()=>onClickBind(member.id, 0)" class="h-48px px-4 hover:text-blue-400 hover:border-blue-400 transition-all duration-200 cursor-pointer rounded-xl text-slate-200 text-xl bg-slate-800/50 border border-2px border-solid border-slate-600 hover:bg-slate-700/50 active:scale-95 font-sans">
             <span v-if="member.key[0].state === Type.IDLE && !member.key[0].char">
@@ -256,7 +268,7 @@ listen('set_left_click_position', (event) => {
         </div>
         <div class="w-full grid grid-cols-2 gap-4">
           <button @click="()=>onClickTeamMemberSelect(member.id, 1)" class="h-48px px-4 hover:text-blue-400 hover:border-blue-400 transition-all duration-200 cursor-pointer rounded-xl text-slate-200 text-xl bg-slate-800/50 border border-2px border-solid border-slate-600 hover:bg-slate-700/50 active:scale-95 font-sans">
-            {{ getMemberText(member.id,1) }}
+            {{ getMemberText(member.id,1) }} 右侧
           </button>
           <button @click="()=>onClickBind(member.id, 1)" class="h-48px px-4 hover:text-blue-400 hover:border-blue-400 transition-all duration-200 cursor-pointer rounded-xl text-slate-200 text-xl bg-slate-800/50 border border-2px border-solid border-slate-600 hover:bg-slate-700/50 active:scale-95 font-sans">
             <span v-if="member.key[1].state === Type.IDLE && !member.key[1].char">
