@@ -32,14 +32,13 @@ jobs:
         needs: ["create-release"]
         strategy:
             matrix:
-                rust:
-                    - stable
+                rust: [stable]
                 version:
                     - opencv: 4.1.2
                       brew: "@4"
                       features: opencv-4
                 os:
-                   - build: macos
+                    - build: macos
                       image: macos-latest
                       family: osx
                       target: x86_64-apple-darwin
