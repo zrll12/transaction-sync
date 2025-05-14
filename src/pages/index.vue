@@ -2,7 +2,7 @@
 import {computed, reactive, ref} from 'vue';
 import Trash from '../components/trash.vue';
 import {invoke} from "@tauri-apps/api/core";
-import {emit, listen} from "@tauri-apps/api/event";
+import {listen} from "@tauri-apps/api/event";
 
 // 类型定义
 enum Type {
@@ -28,7 +28,7 @@ enum RootSelectType {
 
 // 状态管理
 const bindType = ref(Type.IDLE);
-let curKey: string | null = null;
+// let curKey: string | null = null;
 const curBind = ref(-1);
 const teamMember = ref<TeamMember[]>([]);
 
@@ -142,7 +142,7 @@ const bindKey = (id: number, char: string, idx = 0) => {
     }
     return member;
   })
-  curKey = null;
+  // curKey = null;
   curBind.value = -1;
   bindType.value = Type.IDLE;
 }
