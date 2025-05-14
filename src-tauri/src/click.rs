@@ -95,7 +95,7 @@ fn callback(e: &str, app_handle: tauri::AppHandle) {
         let current_detecting = !DETECTING.load(std::sync::atomic::Ordering::Acquire);
         DETECTING.store(current_detecting, std::sync::atomic::Ordering::Release);
         
-        app_handle.emit("detection_state", current_detecting).unwrap();
+        app_handle.emit("detection_pause_state", current_detecting).unwrap();
         
         if !current_detecting { 
             let mut state = DETECTION_STATE.lock().unwrap();
