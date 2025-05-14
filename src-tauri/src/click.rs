@@ -126,7 +126,7 @@ pub fn click_all_left() {
         if *x != 0 && *y != 0 {
             enigo.move_mouse(*x, *y, Coordinate::Abs).unwrap();
             enigo.button(enigo::Button::Left, enigo::Direction::Click).unwrap();
-            std::thread::sleep(std::time::Duration::from_millis(100));
+            std::thread::sleep(std::time::Duration::from_millis(10));
         }
     }
     enigo.button(enigo::Button::Left, enigo::Direction::Release).unwrap();
@@ -154,7 +154,7 @@ pub fn click_all_right() {
         if *x != 0 && *y != 0 {
             enigo.move_mouse(*x, *y, Coordinate::Abs).unwrap();
             enigo.button(enigo::Button::Left, enigo::Direction::Click).unwrap();
-            std::thread::sleep(std::time::Duration::from_millis(100));
+            std::thread::sleep(std::time::Duration::from_millis(10));
         }
     }
     enigo.button(enigo::Button::Right, enigo::Direction::Release).unwrap();

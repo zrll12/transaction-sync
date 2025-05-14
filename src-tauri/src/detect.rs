@@ -160,8 +160,8 @@ pub fn init(app_handle: tauri::AppHandle) {
 
             app_handle.emit("detection_state", *state).unwrap();
 
-            // 等待100毫秒
-            std::thread::sleep(std::time::Duration::from_millis(100));
+            // 等待5毫秒
+            std::thread::sleep(std::time::Duration::from_millis(5));
         }
     });
 }
