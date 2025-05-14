@@ -1,7 +1,7 @@
 use crate::click::{click_all_left, click_all_right};
 use base64::Engine;
 use lazy_static::lazy_static;
-use opencv::core::AlgorithmHint::ALGO_HINT_DEFAULT;
+// use opencv::core::AlgorithmHint::ALGO_HINT_DEFAULT;
 use opencv::core::{Point, Scalar, Vector};
 use opencv::imgproc;
 use opencv::prelude::*;
@@ -17,7 +17,7 @@ use xcap::Monitor;
 lazy_static! {
     pub static ref DETECTION_STATE: Mutex<DetectState> = Mutex::new(DetectState::Idle);
     pub static ref DETECTING: AtomicBool = AtomicBool::new(true);
-    pub static ref DETECT_KEY: Mutex<String> = Mutex::new("v".to_string());
+    pub static ref DETECT_KEY: Mutex<String> = Mutex::new("".to_string());
 }
 
 #[derive(PartialOrd, PartialEq, Copy, Clone, Serialize)]
@@ -233,14 +233,14 @@ pub fn capture_screen_region(
     )
     .map_err(|e| e.to_string())?;
 
-    // 绘制轮廓
+    // 绘制轮廓a
     let mut result = Mat::default();
     imgproc::cvt_color(
         &edges,
         &mut result,
         imgproc::COLOR_GRAY2BGR,
         0,
-        ALGO_HINT_DEFAULT,
+        // ALGO_HINT_DEFAULT,
     )
     .unwrap();
     for i in 0..contours.len() {

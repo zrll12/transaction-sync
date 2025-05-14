@@ -144,6 +144,7 @@ const rootBind = () => {
   window.addEventListener('keydown', (ev) => {
     rootState.state = Type.IDLE;
     rootState.key = ev.key;
+    invoke("set_detection_key", {key: rootState.key});
     abort.abort();
   }, {signal: abort.signal })
 }
@@ -214,25 +215,8 @@ listen('set_right_click_position', (event) => {
 })
 
 
-/*
-invoke("set_detection_key", {key: "a"});
-*/
-
 listen("detection_state", (event) => {
   rootState.stopped = event.payload as boolean;
-})
-
-
-onMounted(()=>{
-  window.addEventListener('keydown', (ev)=>{
-    if (rootState.state !== Type.IDLE){
-      return;
-    }
-    if (rootState.key === ev.key) {
-      invoke("set_detecting", {state: rootState.stopped})
-      rootState.stopped = !rootState.stopped;
-    }
-  })
 })
 
 </script>

@@ -5,7 +5,7 @@
   "identifier": "com.transaction-sync-v2.app",
   "build": {
     "beforeDevCommand": "pnpm dev",
-    "devUrl": "http://localhost:1420",
+    "devUrl": "http://localhost:5137",
     "beforeBuildCommand": "pnpm build",
     "frontendDist": "../dist"
   },
