@@ -1,3 +1,4 @@
+use crate::detect::{DetectState, DETECTING, DETECTION_STATE, DETECT_KEY};
 use enigo::{Button, Coordinate, Direction, Enigo, Mouse, Settings};
 use lazy_static::lazy_static;
 use std::collections::HashMap;
@@ -5,6 +6,7 @@ use std::net::TcpListener;
 use std::sync::atomic::{AtomicBool, AtomicU32};
 use std::sync::Mutex;
 use std::thread::spawn;
+use tauri::Emitter;
 use tungstenite::accept;
 
 lazy_static! {
@@ -67,25 +69,40 @@ pub fn move_mouse() {
 //     CLICKED.store(false, std::sync::atomic::Ordering::SeqCst);
 // }
 
-pub fn init() {
+pub fn init(app_handle: tauri::AppHandle) {
     println!("listen on port 35806");
     let server = TcpListener::bind("127.0.0.1:35806").unwrap();
-    for stream in server.incoming() {
-        spawn (move || {
-            let Ok(mut websocket) = accept(stream.unwrap()) else {return;};
-            loop {
-                let msg = websocket.read().unwrap();
+    std::thread::spawn(move || loop {
+        for stream in server.incoming() {
+            let handle1 = app_handle.clone();
+            spawn (move || {
+                let Ok(mut websocket) = accept(stream.unwrap()) else {return;};
+                loop {
+                    let msg = websocket.read().unwrap();
 
-                if msg.is_text() {
-                    callback(msg.to_text().unwrap())
+                    if msg.is_text() {
+                        callback(msg.to_text().unwrap(), handle1.clone());
+                    }
                 }
-            }
-        });
-    }
+            });
+        }
+    });
 }
 
-fn callback(e: &str) {
+fn callback(e: &str, app_handle: tauri::AppHandle) {
     println!("{:?}", e);
+    if e == *DETECT_KEY.lock().unwrap() { 
+        let current_detecting = !DETECTING.load(std::sync::atomic::Ordering::Acquire);
+        DETECTING.store(current_detecting, std::sync::atomic::Ordering::Release);
+        
+        app_handle.emit("detection_state", current_detecting).unwrap();
+        
+        if !current_detecting { 
+            let mut state = DETECTION_STATE.lock().unwrap();
+            *state = DetectState::Idle;
+        }
+    }
+    
     let Some(&(index, left)) = KEY_BIND.lock().unwrap().get(e) else {
         println!("Key pressed: {:?}", KEY_BIND.lock().unwrap());
         return;
