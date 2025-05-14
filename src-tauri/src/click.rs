@@ -6,7 +6,6 @@ use std::net::TcpListener;
 use std::sync::atomic::{AtomicBool, AtomicU32};
 use std::sync::Mutex;
 use std::thread::spawn;
-use opencv::core::print_cuda_device_info;
 use tungstenite::accept;
 
 lazy_static! {
