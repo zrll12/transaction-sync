@@ -8,6 +8,7 @@ use opencv::prelude::*;
 use serde::Serialize;
 use serde_json::json;
 use std::cmp::PartialEq;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
 use tauri::{Emitter, WebviewUrl, WebviewWindowBuilder};
 use xcap::image::GenericImageView;
@@ -15,6 +16,7 @@ use xcap::Monitor;
 
 lazy_static! {
     static ref DETECTION_STATE: Mutex<DetectState> = Mutex::new(DetectState::Idle);
+    static ref DETECTING: AtomicBool = AtomicBool::new(true);
 }
 
 #[derive(PartialOrd, PartialEq, Copy, Clone, Serialize)]
@@ -48,6 +50,12 @@ pub fn init(app_handle: tauri::AppHandle) {
     // 启动检测线程
     std::thread::spawn(move || {
         loop {
+            if !DETECTING.load(Ordering::Acquire) { 
+                // 如果检测状态为false，则跳过处理
+                std::thread::sleep(std::time::Duration::from_millis(100));
+                continue;
+            }
+            
             // 获取检测区域1坐标
             let x1_1 = crate::click::DETECT_AREA
                 .0
@@ -265,4 +273,14 @@ pub fn capture_screen_region(
         .map_err(|e| e.to_string())?;
 
     Ok(contours.len() as u32)
+}
+
+#[tauri::command]
+pub fn set_detecting(state: bool) {
+    println!("state: {}", state);
+    DETECTING.store(state, std::sync::atomic::Ordering::SeqCst);
+    if !state {
+        let mut state = DETECTION_STATE.lock().unwrap();
+        *state = DetectState::Idle;
+    }
 }

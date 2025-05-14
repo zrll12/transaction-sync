@@ -65,6 +65,7 @@ fn key_type_to_string(key: Key) -> Option<String> {
         Key::Comma => {Some(",".to_string())}
         Key::Dot => {Some(".".to_string())}
         Key::Slash => {Some("/".to_string())}
+        Key::Pause => {Some("Pause".to_string())}
         _ => None
     }
 }
