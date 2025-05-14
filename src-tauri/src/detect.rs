@@ -15,12 +15,13 @@ use xcap::image::GenericImageView;
 use xcap::Monitor;
 
 lazy_static! {
-    static ref DETECTION_STATE: Mutex<DetectState> = Mutex::new(DetectState::Idle);
-    static ref DETECTING: AtomicBool = AtomicBool::new(true);
+    pub static ref DETECTION_STATE: Mutex<DetectState> = Mutex::new(DetectState::Idle);
+    pub static ref DETECTING: AtomicBool = AtomicBool::new(true);
+    pub static ref DETECT_KEY: Mutex<String> = Mutex::new("v".to_string());
 }
 
 #[derive(PartialOrd, PartialEq, Copy, Clone, Serialize)]
-enum DetectState {
+pub enum DetectState {
     Idle,
     LeftDetected,
     RightDetected,
@@ -50,12 +51,12 @@ pub fn init(app_handle: tauri::AppHandle) {
     // 启动检测线程
     std::thread::spawn(move || {
         loop {
-            if !DETECTING.load(Ordering::Acquire) { 
+            if !DETECTING.load(Ordering::Acquire) {
                 // 如果检测状态为false，则跳过处理
                 std::thread::sleep(std::time::Duration::from_millis(100));
                 continue;
             }
-            
+
             // 获取检测区域1坐标
             let x1_1 = crate::click::DETECT_AREA
                 .0
@@ -276,11 +277,7 @@ pub fn capture_screen_region(
 }
 
 #[tauri::command]
-pub fn set_detecting(state: bool) {
-    println!("state: {}", state);
-    DETECTING.store(state, std::sync::atomic::Ordering::SeqCst);
-    if !state {
-        let mut state = DETECTION_STATE.lock().unwrap();
-        *state = DetectState::Idle;
-    }
+pub fn set_detection_key(key: String) {
+    let mut detect_key = DETECT_KEY.lock().unwrap();
+    *detect_key = key;
 }

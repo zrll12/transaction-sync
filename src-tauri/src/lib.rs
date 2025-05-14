@@ -2,17 +2,13 @@ mod click;
 mod window;
 mod detect;
 
-use tauri::async_runtime::spawn;
 use click::{delete_click_position, move_mouse, set_key_bind};
+use detect::set_detection_key;
+use tauri::async_runtime::spawn;
 use window::{close_select_window, open_select_window};
-use detect::set_detecting;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    spawn(async {
-        click::init();
-    });
-
     tauri::Builder::default()
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_opener::init())
@@ -22,9 +18,10 @@ pub fn run() {
             delete_click_position,
             move_mouse,
             set_key_bind,
-            set_detecting,
+            set_detection_key,
         ])
         .setup(|app| {
+            click::init(app.handle().clone());
             detect::init(app.handle().clone());
             Ok(())
         })

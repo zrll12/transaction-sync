@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {computed, reactive, ref, onMounted} from 'vue';
+import {computed, onMounted, reactive, ref} from 'vue';
 import Trash from '../components/trash.vue';
 import Btn from '../components/btn.vue';
 import {invoke} from "@tauri-apps/api/core";
@@ -212,6 +212,16 @@ listen('set_right_click_position', (event) => {
     }
   });
 })
+
+
+/*
+invoke("set_detection_key", {key: "a"});
+*/
+
+listen("detection_state", (event) => {
+  rootState.stopped = event.payload as boolean;
+})
+
 
 onMounted(()=>{
   window.addEventListener('keydown', (ev)=>{
