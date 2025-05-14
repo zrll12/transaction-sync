@@ -1,6 +1,5 @@
 use enigo::{Button, Coordinate, Direction, Enigo, Mouse, Settings};
 use lazy_static::lazy_static;
-use rdev::{listen, Event, EventType, Key};
 use std::collections::HashMap;
 use std::net::TcpListener;
 use std::sync::atomic::{AtomicBool, AtomicU32};
@@ -115,10 +114,6 @@ pub fn set_key_bind(id: i32, char: String, left: bool) {
 
 #[tauri::command]
 pub fn click_all_left() {
-    let current_mouse_pos_x = MOUSE_POSITION_X.load(std::sync::atomic::Ordering::Acquire);
-    let current_mouse_pos_y = MOUSE_POSITION_Y.load(std::sync::atomic::Ordering::Acquire);
-    MOUSE_POSITION_X.store(0, std::sync::atomic::Ordering::SeqCst);
-    MOUSE_POSITION_Y.store(0, std::sync::atomic::Ordering::SeqCst);
     let positions = LEFT_CLICK_POSITION.lock().unwrap();
     let mut enigo = Enigo::new(&Settings::default()).unwrap();
     enigo.button(enigo::Button::Left, enigo::Direction::Release).unwrap();
@@ -126,27 +121,13 @@ pub fn click_all_left() {
         if *x != 0 && *y != 0 {
             enigo.move_mouse(*x, *y, Coordinate::Abs).unwrap();
             enigo.button(enigo::Button::Left, enigo::Direction::Click).unwrap();
-            std::thread::sleep(std::time::Duration::from_millis(10));
+            std::thread::sleep(std::time::Duration::from_micros(500));
         }
     }
-    enigo.button(enigo::Button::Left, enigo::Direction::Release).unwrap();
-    enigo
-        .move_mouse(
-            current_mouse_pos_x as i32,
-            current_mouse_pos_y as i32,
-            Coordinate::Abs,
-        )
-        .unwrap();
-    MOUSE_POSITION_X.store(current_mouse_pos_x, std::sync::atomic::Ordering::SeqCst);
-    MOUSE_POSITION_Y.store(current_mouse_pos_y, std::sync::atomic::Ordering::SeqCst);
 }
 
 #[tauri::command]
 pub fn click_all_right() {
-    let current_mouse_pos_x = MOUSE_POSITION_X.load(std::sync::atomic::Ordering::Acquire);
-    let current_mouse_pos_y = MOUSE_POSITION_Y.load(std::sync::atomic::Ordering::Acquire);
-    MOUSE_POSITION_X.store(0, std::sync::atomic::Ordering::SeqCst);
-    MOUSE_POSITION_Y.store(0, std::sync::atomic::Ordering::SeqCst);
     let positions = RIGHT_CLICK_POSITION.lock().unwrap();
     let mut enigo = Enigo::new(&Settings::default()).unwrap();
     enigo.button(enigo::Button::Right, enigo::Direction::Release).unwrap();
@@ -154,17 +135,7 @@ pub fn click_all_right() {
         if *x != 0 && *y != 0 {
             enigo.move_mouse(*x, *y, Coordinate::Abs).unwrap();
             enigo.button(enigo::Button::Left, enigo::Direction::Click).unwrap();
-            std::thread::sleep(std::time::Duration::from_millis(10));
+            std::thread::sleep(std::time::Duration::from_micros(500));
         }
     }
-    enigo.button(enigo::Button::Right, enigo::Direction::Release).unwrap();
-    enigo
-        .move_mouse(
-            current_mouse_pos_x as i32,
-            current_mouse_pos_y as i32,
-            Coordinate::Abs,
-        )
-        .unwrap();
-    MOUSE_POSITION_X.store(current_mouse_pos_x, std::sync::atomic::Ordering::SeqCst);
-    MOUSE_POSITION_Y.store(current_mouse_pos_y, std::sync::atomic::Ordering::SeqCst);
 }

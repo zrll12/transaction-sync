@@ -1,3 +1,4 @@
+use crate::click::{click_all_left, click_all_right};
 use base64::Engine;
 use lazy_static::lazy_static;
 use opencv::core::AlgorithmHint::ALGO_HINT_DEFAULT;
@@ -11,7 +12,6 @@ use std::sync::Mutex;
 use tauri::{Emitter, WebviewUrl, WebviewWindowBuilder};
 use xcap::image::GenericImageView;
 use xcap::Monitor;
-use crate::click::{click_all_left, click_all_right};
 
 lazy_static! {
     static ref DETECTION_STATE: Mutex<DetectState> = Mutex::new(DetectState::Idle);
@@ -160,8 +160,8 @@ pub fn init(app_handle: tauri::AppHandle) {
 
             app_handle.emit("detection_state", *state).unwrap();
 
-            // 等待5毫秒
-            std::thread::sleep(std::time::Duration::from_millis(5));
+            // 等待0.5毫秒
+            std::thread::sleep(std::time::Duration::from_micros(500));
         }
     });
 }
@@ -208,20 +208,9 @@ pub fn capture_screen_region(
         mat.set_data(buffer.as_ptr());
     }
 
-    // 转换为灰度图
-    let mut gray = Mat::default();
-    imgproc::cvt_color(
-        &mat,
-        &mut gray,
-        imgproc::COLOR_BGR2GRAY,
-        0,
-        ALGO_HINT_DEFAULT,
-    )
-    .map_err(|e| e.to_string())?;
-
     // 边缘检测
     let mut edges = Mat::default();
-    imgproc::canny(&gray, &mut edges, 50.0, 150.0, 3, false).map_err(|e| e.to_string())?;
+    imgproc::canny(&mat, &mut edges, 50.0, 150.0, 3, false).map_err(|e| e.to_string())?;
 
     // 查找轮廓
     let mut contours = Vector::<Vector<Point>>::new();
