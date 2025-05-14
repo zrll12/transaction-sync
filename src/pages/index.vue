@@ -219,7 +219,7 @@ onMounted(()=>{
       return;
     }
     if (rootState.key === ev.key) {
-      // todo
+      invoke("set_detecting", {state: rootState.stopped})
       rootState.stopped = !rootState.stopped;
     }
   })
