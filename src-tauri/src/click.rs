@@ -92,8 +92,6 @@ fn callback(e: &str) {
         return;
     };
 
-    println!("222");
-
     let pos = if left {
         *LEFT_CLICK_POSITION.lock().unwrap().get(index as usize).unwrap_or(&(0, 0))
     } else {
@@ -103,8 +101,6 @@ fn callback(e: &str) {
     if pos == (0, 0) {
         return;
     }
-
-    println!("333");
 
     let mut enigo = Enigo::new(&Settings::default()).unwrap();
     enigo.move_mouse(pos.0, pos.1, Coordinate::Abs).unwrap();
@@ -157,7 +153,7 @@ pub fn click_all_right() {
     for (x, y) in positions.iter() {
         if *x != 0 && *y != 0 {
             enigo.move_mouse(*x, *y, Coordinate::Abs).unwrap();
-            enigo.button(enigo::Button::Right, enigo::Direction::Click).unwrap();
+            enigo.button(enigo::Button::Left, enigo::Direction::Click).unwrap();
             std::thread::sleep(std::time::Duration::from_millis(100));
         }
     }
