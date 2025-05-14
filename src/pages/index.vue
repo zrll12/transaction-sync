@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import {computed, reactive, ref} from 'vue';
+import {computed, reactive, ref, onMounted} from 'vue';
 import Trash from '../components/trash.vue';
+import Btn from '../components/btn.vue';
 import {invoke} from "@tauri-apps/api/core";
 import {listen} from "@tauri-apps/api/event";
 
@@ -31,6 +32,12 @@ const bindType = ref(Type.IDLE);
 // let curKey: string | null = null;
 const curBind = ref(-1);
 const teamMember = ref<TeamMember[]>([]);
+
+const rootState = reactive({
+  state: Type.IDLE,
+  key: '',
+  stopped: false,
+})
 
 // 区域坐标状态
 const rootPoint = reactive({
@@ -128,6 +135,19 @@ const onClickBind = (id: number, idx: 0 | 1) => {
   }, {signal: abort.signal})
 }
 
+const rootBind = () => {
+  if (rootState.state !== Type.IDLE) {
+    return;
+  }
+  rootState.state= Type.PENDING;
+  const abort = new AbortController();
+  window.addEventListener('keydown', (ev) => {
+    rootState.state = Type.IDLE;
+    rootState.key = ev.key;
+    abort.abort();
+  }, {signal: abort.signal })
+}
+
 const bindKey = (id: number, char: string, idx = 0) => {
   if(bindType.value === Type.IDLE) {
     return;
@@ -193,6 +213,18 @@ listen('set_right_click_position', (event) => {
   });
 })
 
+onMounted(()=>{
+  window.addEventListener('keydown', (ev)=>{
+    if (rootState.state !== Type.IDLE){
+      return;
+    }
+    if (rootState.key === ev.key) {
+      // todo
+      rootState.stopped = !rootState.stopped;
+    }
+  })
+})
+
 </script>
 
 <template>
@@ -203,6 +235,16 @@ listen('set_right_click_position', (event) => {
         <h1 class="text-slate-200 text-base leading-none font-sans">队长设置</h1>
         <div class="w-full h-1px bg-zinc-500"></div>
         <p class="text-slate-200 font-sans">请检测队长的设置并同步</p>
+        <div class="flex items-center gap-4">
+          <btn @click="rootBind">
+            <span v-if="!rootState.key && rootState.state === Type.IDLE">点击绑定</span>
+            <span v-else-if="rootState.state === Type.PENDING">等待输入</span>
+            <span v-else>{{rootState.key}}</span>
+          </btn>
+          <span class="text-white">
+            当前状态: {{rootState.stopped ? '已停止' : '监视中'}}
+          </span>
+        </div>
         <div class="flex flex-col gap-4">
           <div class="space-y-2">
             <h2 class="text-slate-200 font-sans text-lg">监控区域1</h2>
