@@ -1,51 +1,43 @@
-name: OpenCV-Rust
+name: Rust test
 
 on:
   workflow_dispatch:
   push:
-    tags:
-      - 'v*'
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
 
 jobs:
   build:
     runs-on: windows-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Set up Rust
-        uses: actions-rs/toolchain@v1
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable
-          target: x86_64-pc-windows-msvc
-
-      - name: Install OpenCV
-        run: |
-          choco install -y llvm
-          choco install -y opencv
-          echo OPENCV_DIR=C:\\tools\\opencv >> $GITHUB_ENV
-
-      - name: Install pnpm
+          toolchain: stable-msvc
+      - name: Install Opencv
+        run: 
+          choco install -y llvm && \
+          vcpkg install llvm opencv4
+      - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 9.5.0
           run_install: false
-
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 23
           cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install
-
-      - name: Build Project
+      - name: Build
         run: pnpm tauri build
-
-      - name: Upload release assets
+      - name: Archive Build Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: rs-opencv-windows
+          name: build-artifacts
           path: src-tauri/target/release
