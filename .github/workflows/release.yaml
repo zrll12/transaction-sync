@@ -44,11 +44,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: build-artifacts
-          path: |
-            src-tauri/target/release/
-            !src-tauri/target/release/.fingerprint
-            !src-tauri/target/release/build
-            !src-tauri/target/release/deps
-            !src-tauri/target/release/deps
-            !src-tauri/target/release/examples
-            !src-tauri/target/release/incremental
+          path: src-tauri/target/release

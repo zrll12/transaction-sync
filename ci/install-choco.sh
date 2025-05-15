@@ -24,7 +24,6 @@ export CXX=clang++
 pnpm tauri build
 
 cp C:/tools/opencv/build/x64/vc16/bin/*.dll .
-cp C:/tools/opencv/build/x64/vc15/bin/*.dll .
 
 rm -rf src-tauri/target/release/.fingerprint
 rm -rf src-tauri/target/release/build
