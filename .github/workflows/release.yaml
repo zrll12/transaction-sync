@@ -1,83 +1,48 @@
-name: Release
+name: OpenCV-Rust
+
 on:
-    push:
-        # Enable when testing release infrastructure on a branch.
-        branches:
-           - master
-        tags:
-            - "v[0-9]+.[0-9]+.[0-9]+"
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
 jobs:
-    create-release:
-        runs-on: ubuntu-latest
-        # Set to force version number, e.g., when no tag exists.
-        #env:
-            #PRODUCT_VERSION: TEST-0.0.0
-        outputs:
-            version: ${{ env.PRODUCT_VERSION }}
-            upload_url: ${{ steps.release.outputs.upload_url }}
-        steps:
-            - name: Get the release version from the tag
-              if: env.PRODUCT_VERSION == ''
-              run: |
-                  echo "PRODUCT_VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
-            - name: Create GitHub release
-              id: release
-              uses: actions/create-release@v1
-              env:
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-              with:
-                  tag_name: ${{ env.PRODUCT_VERSION }}
-                  release_name: ${{ env.PRODUCT_VERSION }}
-    build-artifact:
-        needs: ["create-release"]
-        strategy:
-            matrix:
-                rust: [stable]
-                version:
-                    - opencv: 4.1.2
-                      brew: "@4"
-                      features: opencv-4
-                os:
-                    - build: win-msvc
-                      image: windows-2019
-                      family: windows
-                      target: x86_64-pc-windows-msvc
+  build:
+    runs-on: windows-latest
 
-        runs-on: ${{ matrix.os.image }}
-        env:
-            OS_FAMILY: ${{ matrix.os.family }}
-            RUST_TOOLCHAIN: ${{ matrix.rust }}
-            OPENCV_VERSION: ${{ matrix.version.opencv }}
-            CHOCO_OPENCV_VERSION: ${{ matrix.version.opencv }}
-            BREW_OPENCV_VERSION: ${{ matrix.version.brew }}
-            CARGO_FEATURES: ${{ matrix.version.features }}
-        steps:
-            - uses: actions/checkout@v2
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-            - name: Install OpenCV dependencies
-              run: ci/install.sh
-              shell: bash
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: x86_64-pc-windows-msvc
 
-            - name: Install Rust
-              uses: actions-rs/toolchain@v1
-              with:
-                  toolchain: ${{ matrix.rust }}
-                  default: true
-            - uses: pnpm/action-setup@v4
-              name: Install pnpm
-              with:
-                version: 10
-                run_install: false
+      - name: Install OpenCV
+        run: |
+          choco install -y llvm
+          choco install -y opencv
+          echo OPENCV_DIR=C:\\tools\\opencv >> $GITHUB_ENV
 
-            - name: Install Node.js
-              uses: actions/setup-node@v4
-              with:
-                node-version: 20
-            - name: Install dependencies
-              run: pnpm install
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
 
-            - name: Build
-              run: |
-                  source ./ci/setup-env.sh
-                  pnpm tauri build -vv
-              shell: bash
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 23
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build Project
+        run: pnpm tauri build
+
+      - name: Upload release assets
+        uses: actions/upload-artifact@v3
+        with:
+          name: rs-opencv-windows
+          path: src-tauri/target/release

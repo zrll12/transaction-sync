@@ -216,7 +216,7 @@ listen('set_right_click_position', (event) => {
 
 
 listen("detection_pause_state", (event) => {
-  rootState.stopped = event.payload as boolean;
+  rootState.stopped = !event.payload as boolean;
 })
 
 </script>
