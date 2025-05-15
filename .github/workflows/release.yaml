@@ -13,6 +13,13 @@ permissions:
 jobs:
   build:
     runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        version:
+          - opencv: 4.11.0
+    env:
+      OPENCV_VERSION: ${{ matrix.version.opencv }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -20,10 +27,11 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: stable-msvc
+
       - name: Install Opencv
-        run: 
-          choco install -y llvm &&
-          vcpkg install opencv4[contrib,nonfree]
+        run: ci/install.sh
+        shell: bash
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
