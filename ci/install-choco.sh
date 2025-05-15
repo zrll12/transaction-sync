@@ -21,5 +21,13 @@ export RUST_BACKTRACE=full
 
 export CXX=clang++
 
-pnpm i
 pnpm tauri build
+
+cp C:/tools/opencv/build/x64/vc16/bin/*.dll .
+cp C:/tools/opencv/build/x64/vc15/bin/*.dll .
+
+rm -rf src-tauri/target/release/.fingerprint
+rm -rf src-tauri/target/release/build
+rm -rf src-tauri/target/release/deps
+rm -rf src-tauri/target/release/examples
+rm -rf src-tauri/target/release/incremental
