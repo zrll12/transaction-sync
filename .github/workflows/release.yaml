@@ -22,7 +22,7 @@ jobs:
           toolchain: stable-msvc
       - name: Install Opencv
         run: 
-          choco install -y llvm && \
+          choco install -y llvm &&
           vcpkg install llvm opencv4
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
