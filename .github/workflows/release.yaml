@@ -39,7 +39,7 @@ jobs:
           node-version: 23
           cache: 'pnpm'
       - name: Build
-        run: sh ci/install-choco.sh && pnpm i && pnpm tauri build
+        run: sh ci/install-choco.sh
       - name: Archive Build Artifacts
         uses: actions/upload-artifact@v4
         with:
