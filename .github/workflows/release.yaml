@@ -23,7 +23,7 @@ jobs:
       - name: Install Opencv
         run: 
           choco install -y llvm &&
-          vcpkg install opencv4
+          vcpkg install opencv4[core,imgproc,imgcodecs,contrib,nonfree]
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
