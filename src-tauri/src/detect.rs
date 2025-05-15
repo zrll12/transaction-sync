@@ -1,7 +1,7 @@
 use crate::click::{click_all_left, click_all_right};
 use base64::Engine;
 use lazy_static::lazy_static;
-// use opencv::core::AlgorithmHint::ALGO_HINT_DEFAULT;
+use opencv::core::AlgorithmHint::ALGO_HINT_DEFAULT;
 use opencv::core::{Point, Scalar, Vector};
 use opencv::imgproc;
 use opencv::prelude::*;
@@ -240,7 +240,7 @@ pub fn capture_screen_region(
         &mut result,
         imgproc::COLOR_GRAY2BGR,
         0,
-        // ALGO_HINT_DEFAULT,
+        ALGO_HINT_DEFAULT,
     )
     .unwrap();
     for i in 0..contours.len() {
