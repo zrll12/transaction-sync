@@ -147,7 +147,7 @@ pub fn click_all_left() {
 pub fn click_all_right() {
     let positions = RIGHT_CLICK_POSITION.lock().unwrap();
     let mut enigo = Enigo::new(&Settings::default()).unwrap();
-    enigo.button(enigo::Button::Right, enigo::Direction::Release).unwrap();
+    enigo.button(enigo::Button::Left, enigo::Direction::Release).unwrap();
     for (x, y) in positions.iter() {
         if *x != 0 && *y != 0 {
             enigo.move_mouse(*x, *y, Coordinate::Abs).unwrap();

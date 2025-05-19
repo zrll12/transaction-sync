@@ -51,12 +51,6 @@ pub fn init(app_handle: tauri::AppHandle) {
     // 启动检测线程
     std::thread::spawn(move || {
         loop {
-            if !DETECTING.load(Ordering::Acquire) {
-                // 如果检测状态为false，则跳过处理
-                std::thread::sleep(std::time::Duration::from_millis(100));
-                continue;
-            }
-
             // 获取检测区域1坐标
             let x1_1 = crate::click::DETECT_AREA
                 .0
@@ -134,12 +128,14 @@ pub fn init(app_handle: tauri::AppHandle) {
                 .unwrap();
                 // 1. 如果idle并且检测到物体，则设置为左检测状态
                 // 2. 如果是左检测状态但没有检测到物体，则设置为idle状态
-                if *state == DetectState::Idle && left > 0 {
-                    *state = DetectState::LeftDetected;
-                    click_all_left();
-                } else if *state == DetectState::LeftDetected && left == 0 {
-                    *state = DetectState::Idle;
-                    click_all_right();
+                if DETECTING.load(Ordering::Acquire) {
+                    if *state == DetectState::Idle && left > 0 {
+                        *state = DetectState::LeftDetected;
+                        click_all_left();
+                    } else if *state == DetectState::LeftDetected && left == 0 {
+                        *state = DetectState::Idle;
+                        click_all_right();
+                    }
                 }
             }
 
@@ -158,12 +154,15 @@ pub fn init(app_handle: tauri::AppHandle) {
                     "update-preview-2",
                 )
                 .unwrap();
-                if *state == DetectState::Idle && right > 0 {
-                    *state = DetectState::RightDetected;
-                    click_all_right();
-                } else if *state == DetectState::RightDetected && right == 0 {
-                    *state = DetectState::Idle;
-                    click_all_left();
+
+                if DETECTING.load(Ordering::Acquire) {
+                    if *state == DetectState::Idle && right > 0 {
+                        *state = DetectState::RightDetected;
+                        click_all_right();
+                    } else if *state == DetectState::RightDetected && right == 0 {
+                        *state = DetectState::Idle;
+                        click_all_left();
+                    }
                 }
             }
 
