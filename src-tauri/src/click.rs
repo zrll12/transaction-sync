@@ -90,7 +90,7 @@ pub fn init(app_handle: tauri::AppHandle) {
 }
 
 fn callback(e: &str, app_handle: tauri::AppHandle) {
-    println!("{:?}", e);
+    app_handle.emit("key_pressed", e).unwrap();
     if e == *DETECT_KEY.lock().unwrap() { 
         let current_detecting = !DETECTING.load(std::sync::atomic::Ordering::Acquire);
         DETECTING.store(current_detecting, std::sync::atomic::Ordering::Release);

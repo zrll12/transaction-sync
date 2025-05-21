@@ -5,11 +5,11 @@ use tungstenite::{client, Message};
 async fn main() {
     let url = "ws://127.0.0.1:35806";
     let (mut ws_stream, _) = client::connect(url).unwrap();
-    ws_stream.send(Message::text("Hello, server!")).unwrap();
     
     listen(move |e| {
         if let EventType::KeyPress(key) = e.event_type {
             if let Some(key_str) = key_type_to_string(key) {
+                println!("{}", key_str);
                 ws_stream.send(Message::text(key_str)).unwrap();
             }
         }
