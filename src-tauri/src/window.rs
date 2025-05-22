@@ -44,7 +44,7 @@ pub async fn close_select_window(window: Window, handle: tauri::AppHandle) -> Re
         window.scale_factor().unwrap()
     };
     let physical_pos = (
-        pos.x as f64 / scale_factor + 48.0,
+        pos.x as f64 / scale_factor + 45.0,
         pos.y as f64 / scale_factor + 35.0,
     );
     let parts: Vec<&str> = window.label().split('_').collect();
