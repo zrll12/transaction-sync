@@ -136,6 +136,8 @@ pub fn init(app_handle: tauri::AppHandle) {
                         *state = DetectState::Idle;
                         click_all_right();
                     }
+                } else {
+                    std::thread::sleep(std::time::Duration::from_millis(100));
                 }
             }
 
@@ -163,6 +165,8 @@ pub fn init(app_handle: tauri::AppHandle) {
                         *state = DetectState::Idle;
                         click_all_left();
                     }
+                } else {
+                    std::thread::sleep(std::time::Duration::from_millis(100));
                 }
             }
 
