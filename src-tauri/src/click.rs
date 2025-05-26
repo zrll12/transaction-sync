@@ -4,7 +4,7 @@ use lazy_static::lazy_static;
 use std::collections::HashMap;
 use std::net::TcpListener;
 use std::sync::atomic::{AtomicBool, AtomicU32};
-use std::sync::Mutex;
+use std::sync::RwLock;
 use std::thread::spawn;
 use tauri::Emitter;
 use tungstenite::accept;
@@ -16,9 +16,9 @@ lazy_static! {
         (AtomicU32::new(0), AtomicU32::new(0)), // 区域2的起始点
         (AtomicU32::new(0), AtomicU32::new(0)), // 区域2的终点
     );
-    pub static ref LEFT_CLICK_POSITION: Mutex<Vec<(i32, i32)>> = Mutex::new(vec![]);
-    pub static ref RIGHT_CLICK_POSITION: Mutex<Vec<(i32, i32)>> = Mutex::new(vec![]);
-    pub static ref KEY_BIND: Mutex<HashMap<String, (i32, bool)>> = Mutex::new(HashMap::new());
+    pub static ref LEFT_CLICK_POSITION: RwLock<Vec<(i32, i32)>> = RwLock::new(vec![]);
+    pub static ref RIGHT_CLICK_POSITION: RwLock<Vec<(i32, i32)>> = RwLock::new(vec![]);
+    pub static ref KEY_BIND: RwLock<HashMap<String, (i32, bool)>> = RwLock::new(HashMap::new());
     static ref MOUSE_POSITION_X: AtomicU32 = AtomicU32::new(0);
     static ref MOUSE_POSITION_Y: AtomicU32 = AtomicU32::new(0);
     static ref CLICKED: AtomicBool = AtomicBool::new(false);
@@ -26,10 +26,10 @@ lazy_static! {
 
 #[tauri::command]
 pub fn delete_click_position(index: i32) {
-    let mut positions = LEFT_CLICK_POSITION.lock().unwrap();
+    let mut positions = LEFT_CLICK_POSITION.write().unwrap();
     positions[index as usize] = (0, 0);
 
-    let mut positions = RIGHT_CLICK_POSITION.lock().unwrap();
+    let mut positions = RIGHT_CLICK_POSITION.write().unwrap();
     positions[index as usize] = (0, 0);
 }
 
@@ -91,27 +91,27 @@ pub fn init(app_handle: tauri::AppHandle) {
 
 fn callback(e: &str, app_handle: tauri::AppHandle) {
     app_handle.emit("key_pressed", e).unwrap();
-    if e == *DETECT_KEY.lock().unwrap() { 
+    if e == *DETECT_KEY.read().unwrap() { 
         let current_detecting = !DETECTING.load(std::sync::atomic::Ordering::Acquire);
         DETECTING.store(current_detecting, std::sync::atomic::Ordering::Release);
         
         app_handle.emit("detection_pause_state", current_detecting).unwrap();
         
         if !current_detecting { 
-            let mut state = DETECTION_STATE.lock().unwrap();
+            let mut state = DETECTION_STATE.write().unwrap();
             *state = DetectState::Idle;
         }
     }
     
-    let Some(&(index, left)) = KEY_BIND.lock().unwrap().get(e) else {
-        println!("Key pressed: {:?}", KEY_BIND.lock().unwrap());
+    let Some(&(index, left)) = KEY_BIND.read().unwrap().get(e) else {
+        println!("Key pressed: {:?}", KEY_BIND.read().unwrap());
         return;
     };
 
     let pos = if left {
-        *LEFT_CLICK_POSITION.lock().unwrap().get(index as usize).unwrap_or(&(0, 0))
+        *LEFT_CLICK_POSITION.read().unwrap().get(index as usize).unwrap_or(&(0, 0))
     } else {
-        *RIGHT_CLICK_POSITION.lock().unwrap().get(index as usize).unwrap_or(&(0, 0))
+        *RIGHT_CLICK_POSITION.read().unwrap().get(index as usize).unwrap_or(&(0, 0))
     };
 
     if pos == (0, 0) {
@@ -126,12 +126,12 @@ fn callback(e: &str, app_handle: tauri::AppHandle) {
 #[tauri::command]
 pub fn set_key_bind(id: i32, char: String, left: bool) {
     println!("Bind {}", char);
-    KEY_BIND.lock().unwrap().insert(char, (id, left));
+    KEY_BIND.write().unwrap().insert(char, (id, left));
 }
 
 #[tauri::command]
 pub fn click_all_left() {
-    let positions = LEFT_CLICK_POSITION.lock().unwrap();
+    let positions = LEFT_CLICK_POSITION.read().unwrap();
     let mut enigo = Enigo::new(&Settings::default()).unwrap();
     enigo.button(enigo::Button::Left, enigo::Direction::Release).unwrap();
     for (x, y) in positions.iter() {
@@ -145,7 +145,7 @@ pub fn click_all_left() {
 
 #[tauri::command]
 pub fn click_all_right() {
-    let positions = RIGHT_CLICK_POSITION.lock().unwrap();
+    let positions = RIGHT_CLICK_POSITION.read().unwrap();
     let mut enigo = Enigo::new(&Settings::default()).unwrap();
     enigo.button(enigo::Button::Left, enigo::Direction::Release).unwrap();
     for (x, y) in positions.iter() {
