@@ -15,9 +15,10 @@ use xcap::image::GenericImageView;
 use xcap::Monitor;
 
 lazy_static! {
-    pub static ref DETECTION_STATE: RwLock<DetectState> = RwLock::new(DetectState::Idle);
-    pub static ref DETECTING: AtomicBool = AtomicBool::new(true);
-    pub static ref DETECT_KEY: RwLock<String> = RwLock::new("".to_string());
+  pub static ref DETECTION_STATE: RwLock<DetectState> = RwLock::new(DetectState::Idle);
+  pub static ref DETECTING: AtomicBool = AtomicBool::new(true);
+  pub static ref DETECT_KEY: RwLock<String> = RwLock::new("".to_string());
+  pub static ref CAN_CLICK: AtomicBool = AtomicBool::new(true);
 }
 
 #[derive(PartialOrd, PartialEq, Copy, Clone, Serialize)]
@@ -51,6 +52,9 @@ pub fn init(app_handle: tauri::AppHandle) {
     // 启动检测线程
     std::thread::spawn(move || {
         loop {
+            if !CAN_CLICK.load(Ordering::Acquire) {
+              continue;
+            }
             if !DETECTING.load(Ordering::Acquire) {
                 continue;
             }
@@ -279,4 +283,8 @@ pub fn capture_screen_region(
 pub fn set_detection_key(key: String) {
     let mut detect_key = DETECT_KEY.write().unwrap();
     *detect_key = key;
+}
+#[tauri::command]
+pub fn set_click_state(state: bool){
+  CAN_CLICK.store(state, Ordering::Relaxed)
 }
