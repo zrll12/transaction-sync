@@ -286,6 +286,5 @@ pub fn set_detection_key(key: String) {
 }
 #[tauri::command]
 pub fn set_click_state(state: bool){
-  let mut can_click = CAN_CLICK.write().unwrap();
-  *can_click = state;
+  CAN_CLICK.store(state, Ordering::Relaxed)
 }
