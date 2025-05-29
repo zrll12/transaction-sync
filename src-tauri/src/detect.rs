@@ -52,7 +52,7 @@ pub fn init(app_handle: tauri::AppHandle) {
     // 启动检测线程
     std::thread::spawn(move || {
         loop {
-            if CAN_CLICK.load(Ordering::Acquire) {
+            if !CAN_CLICK.load(Ordering::Acquire) {
               continue;
             }
             if !DETECTING.load(Ordering::Acquire) {
