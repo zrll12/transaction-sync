@@ -2,10 +2,13 @@ use crate::click::{LEFT_CLICK_POSITION, RIGHT_CLICK_POSITION, DETECT_AREA};
 use tauri::{
     Emitter, WebviewUrl, WebviewWindowBuilder, Window
 };
+use tauri::async_runtime::handle;
+use crate::detect::stop_detect;
 
 #[tauri::command]
 pub async fn open_select_window(handle: tauri::AppHandle, label_type: String, index: i32) -> Result<(), String> {
     let window_label = format!("{}_{}", label_type, index);
+    stop_detect(&handle);
 
     let window = WebviewWindowBuilder::new(&handle, window_label, WebviewUrl::App("dialog".into()))
         .inner_size(100.0, 130.0)

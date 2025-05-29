@@ -280,3 +280,17 @@ pub fn set_detection_key(key: String) {
     let mut detect_key = DETECT_KEY.write().unwrap();
     *detect_key = key;
 }
+
+#[tauri::command]
+pub fn start_detect() {
+    DETECTING.store(true, Ordering::Release);
+    println!("Starting Detect mode");
+}
+
+pub fn stop_detect(app_handle: &tauri::AppHandle) {
+    DETECTING.store(false, Ordering::Release);
+    
+    *DETECTION_STATE.write().unwrap() = DetectState::Idle;
+    app_handle.emit("detection_paused", ()).unwrap();
+    println!("Stopping Detect mode");
+}

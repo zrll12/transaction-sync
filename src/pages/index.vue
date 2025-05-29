@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {computed, onMounted, reactive, ref} from 'vue';
+import {computed, reactive, ref} from 'vue';
 import Trash from '../components/trash.vue';
 import Btn from '../components/btn.vue';
 import {invoke} from "@tauri-apps/api/core";
@@ -17,7 +17,7 @@ type TeamMember = {
     [number, number],
     [number, number]
   ];
-  key: {state: Type, char: string|null}[];
+  key: { state: Type, char: string | null }[];
 }
 
 enum RootSelectType {
@@ -41,8 +41,8 @@ const rootState = reactive({
 
 // 区域坐标状态
 const rootPoint = reactive({
-  area1: { x1: 0, y1: 0, x2: 0, y2: 0 },
-  area2: { x1: 0, y1: 0, x2: 0, y2: 0 }
+  area1: {x1: 0, y1: 0, x2: 0, y2: 0},
+  area2: {x1: 0, y1: 0, x2: 0, y2: 0}
 })
 
 // 计算属性
@@ -63,8 +63,8 @@ const addTeamMember = () => {
   teamMember.value.push({
     id,
     point: [
-      [0,0],
-      [0,0]
+      [0, 0],
+      [0, 0]
     ],
     key: [{state: Type.IDLE, char: null}, {state: Type.IDLE, char: null}]
   });
@@ -72,10 +72,10 @@ const addTeamMember = () => {
 
 const getMemberText = (id: number, idx: number) => {
   const member = teamMember.value.filter(member => member.id == id)[0];
-  if (!member){
+  if (!member) {
     return;
   }
-  const [x,y] = member.point[idx];
+  const [x, y] = member.point[idx];
   return x > 0 && y > 0 ? `(${x}, ${y})` : '请选择坐标';
 }
 
@@ -89,7 +89,7 @@ const onClickTeamMemberSelect = async (id: number, pointIdx: number) => {
 
 const rootSelectClick = async (type: RootSelectType) => {
   let index;
-  switch(type) {
+  switch (type) {
     case RootSelectType.LT1:
       index = 0;
       break;
@@ -114,7 +114,7 @@ const onClickBind = (id: number, idx: 0 | 1) => {
     return;
   }
   if (
-    teamMember.value.filter(member => member.id)[0].key[idx].state !== Type.IDLE
+      teamMember.value.filter(member => member.id)[0].key[idx].state !== Type.IDLE
   ) {
     return;
   }
@@ -130,27 +130,20 @@ const onClickBind = (id: number, idx: 0 | 1) => {
   let abort = new AbortController();
   window.addEventListener('keydown', (ev) => {
     bindType.value = Type.PENDING;
-    bindKey(id,ev.key, idx);
+    bindKey(id, ev.key, idx);
     abort.abort();
   }, {signal: abort.signal})
 }
 
 const rootBind = () => {
-  if (rootState.state !== Type.IDLE) {
-    return;
-  }
-  rootState.state= Type.PENDING;
-  const abort = new AbortController();
-  window.addEventListener('keydown', (ev) => {
-    rootState.state = Type.IDLE;
-    rootState.key = ev.key;
-    invoke("set_detection_key", {key: rootState.key});
-    abort.abort();
-  }, {signal: abort.signal })
+  invoke("start_detect")
+      .then(() => {
+        rootState.stopped = false;
+      })
 }
 
 const bindKey = (id: number, char: string, idx = 0) => {
-  if(bindType.value === Type.IDLE) {
+  if (bindType.value === Type.IDLE) {
     return;
   }
   invoke("set_key_bind", {id, char, left: idx == 0});
@@ -198,7 +191,7 @@ listen('set_left_click_position', (event) => {
     const memberId = index;
     const memberIndex = teamMember.value.findIndex(m => m.id === memberId);
     if (memberIndex !== -1) {
-      teamMember.value[memberIndex].point[0] = [x,y];
+      teamMember.value[memberIndex].point[0] = [x, y];
     }
   });
 })
@@ -209,124 +202,138 @@ listen('set_right_click_position', (event) => {
     const memberId = index;
     const memberIndex = teamMember.value.findIndex(m => m.id === memberId);
     if (memberIndex !== -1) {
-      teamMember.value[memberIndex].point[1] = [x,y];
+      teamMember.value[memberIndex].point[1] = [x, y];
     }
   });
 })
 
 
-listen("detection_pause_state", (event) => {
-  rootState.stopped = !event.payload as boolean;
+listen("detection_paused", () => {
+  rootState.stopped = true;
 })
 
 </script>
 
 <template>
   <div class="w-full h-full bg-gradient-to-br from-slate-900 to-slate-800 font-sans text-base leading-normal">
-  <div class="h-full overflow-auto mx-auto py-32px box-border px-4">
-    <div class="w-full">
-      <div class="w-full h-fit box-border p-6 bg-slate-100/10 rounded-3xl shadow-lg backdrop-blur-sm border border-slate-700/30">
-        <h1 class="text-slate-200 text-base leading-none font-sans">队长设置</h1>
-        <div class="w-full h-1px bg-zinc-500"></div>
-        <p class="text-slate-200 font-sans">请检测队长的设置并同步</p>
-        <div class="flex items-center gap-4">
-          <btn @click="rootBind">
-            <span v-if="!rootState.key && rootState.state === Type.IDLE">点击绑定</span>
-            <span v-else-if="rootState.state === Type.PENDING">等待输入</span>
-            <span v-else>{{rootState.key}}</span>
-          </btn>
-          <span class="text-white">
-            当前状态: {{rootState.stopped ? '已停止' : '监视中'}}
+    <div class="h-full overflow-auto mx-auto py-32px box-border px-4">
+      <div class="w-full">
+        <div
+            class="w-full h-fit box-border p-6 bg-slate-100/10 rounded-3xl shadow-lg backdrop-blur-sm border border-slate-700/30">
+          <h1 class="text-slate-200 text-base leading-none font-sans">队长设置</h1>
+          <div class="w-full h-1px bg-zinc-500"></div>
+          <p class="text-slate-200 font-sans">请检测队长的设置并同步</p>
+          <div class="flex items-center gap-4">
+            <btn v-if="rootState.stopped" @click="rootBind">
+              <span>恢复检测</span>
+            </btn>
+            <span class="text-white">
+            当前状态: {{ rootState.stopped ? '已停止' : '监视中' }}
           </span>
-        </div>
-        <div class="flex flex-col gap-4">
-          <div class="space-y-2">
-            <h2 class="text-slate-200 font-sans text-lg">监控区域1</h2>
-            <div class="w-full grid grid-cols-2 justify-between items-center">
-              <span class="text-slate-200 font-sans">左上角</span>
-              <button @click="()=>rootSelectClick(RootSelectType.LT1)" class="min-h-48px hover:text-blue-400 hover:border-blue-400 transition-all duration-200 cursor-pointer rounded-xl text-slate-200 text-xl bg-slate-800/50 border border-2px border-solid border-slate-600 hover:bg-slate-700/50 active:scale-95 font-sans">
-                {{ point1Text }}
-              </button>
-            </div>
-            <div class="w-full grid grid-cols-2 justify-between items-center">
-              <span class="text-slate-200 font-sans">右下角</span>
-              <button @click="()=>rootSelectClick(RootSelectType.RB1)" class="min-h-48px hover:text-blue-400 hover:border-blue-400 transition-all duration-200 cursor-pointer rounded-xl text-slate-200 text-xl bg-slate-800/50 border border-2px border-solid border-slate-600 hover:bg-slate-700/50 active:scale-95 font-sans">
-                {{ point2Text }}
-              </button>
-            </div>
           </div>
-          <div class="space-y-2">
-            <h2 class="text-slate-200 font-sans text-lg">监控区域2</h2>
-            <div class="w-full grid grid-cols-2 justify-between items-center">
-              <span class="text-slate-200 font-sans">左上角</span>
-              <button @click="()=>rootSelectClick(RootSelectType.LT2)" class="min-h-48px hover:text-blue-400 hover:border-blue-400 transition-all duration-200 cursor-pointer rounded-xl text-slate-200 text-xl bg-slate-800/50 border border-2px border-solid border-slate-600 hover:bg-slate-700/50 active:scale-95 font-sans">
-                {{ point3Text }}
-              </button>
+          <div class="flex flex-col gap-4">
+            <div class="space-y-2">
+              <h2 class="text-slate-200 font-sans text-lg">监控区域1</h2>
+              <div class="w-full grid grid-cols-2 justify-between items-center">
+                <span class="text-slate-200 font-sans">左上角</span>
+                <button @click="()=>rootSelectClick(RootSelectType.LT1)"
+                        class="min-h-48px hover:text-blue-400 hover:border-blue-400 transition-all duration-200 cursor-pointer rounded-xl text-slate-200 text-xl bg-slate-800/50 border border-2px border-solid border-slate-600 hover:bg-slate-700/50 active:scale-95 font-sans">
+                  {{ point1Text }}
+                </button>
+              </div>
+              <div class="w-full grid grid-cols-2 justify-between items-center">
+                <span class="text-slate-200 font-sans">右下角</span>
+                <button @click="()=>rootSelectClick(RootSelectType.RB1)"
+                        class="min-h-48px hover:text-blue-400 hover:border-blue-400 transition-all duration-200 cursor-pointer rounded-xl text-slate-200 text-xl bg-slate-800/50 border border-2px border-solid border-slate-600 hover:bg-slate-700/50 active:scale-95 font-sans">
+                  {{ point2Text }}
+                </button>
+              </div>
             </div>
-            <div class="w-full grid grid-cols-2 justify-between items-center">
-              <span class="text-slate-200 font-sans">右下角</span>
-              <button @click="()=>rootSelectClick(RootSelectType.RB2)" class="min-h-48px hover:text-blue-400 hover:border-blue-400 transition-all duration-200 cursor-pointer rounded-xl text-slate-200 text-xl bg-slate-800/50 border border-2px border-solid border-slate-600 hover:bg-slate-700/50 active:scale-95 font-sans">
-                {{ point4Text }}
-              </button>
+            <div class="space-y-2">
+              <h2 class="text-slate-200 font-sans text-lg">监控区域2</h2>
+              <div class="w-full grid grid-cols-2 justify-between items-center">
+                <span class="text-slate-200 font-sans">左上角</span>
+                <button @click="()=>rootSelectClick(RootSelectType.LT2)"
+                        class="min-h-48px hover:text-blue-400 hover:border-blue-400 transition-all duration-200 cursor-pointer rounded-xl text-slate-200 text-xl bg-slate-800/50 border border-2px border-solid border-slate-600 hover:bg-slate-700/50 active:scale-95 font-sans">
+                  {{ point3Text }}
+                </button>
+              </div>
+              <div class="w-full grid grid-cols-2 justify-between items-center">
+                <span class="text-slate-200 font-sans">右下角</span>
+                <button @click="()=>rootSelectClick(RootSelectType.RB2)"
+                        class="min-h-48px hover:text-blue-400 hover:border-blue-400 transition-all duration-200 cursor-pointer rounded-xl text-slate-200 text-xl bg-slate-800/50 border border-2px border-solid border-slate-600 hover:bg-slate-700/50 active:scale-95 font-sans">
+                  {{ point4Text }}
+                </button>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-    <div class="w-full space-y-4 mt-40px">
-      <div class="w-full p-4 bg-slate-100/10 rounded-3xl box-border flex flex-col justify-around gap-4 shadow-md backdrop-blur-sm border border-slate-700/30 transition-all hover:bg-slate-700/20" v-for="member of teamMember" :key="member.id">
-        <div class="flex items-center justify-between w-full">
-          <span class="text-zinc-200 font-sans">队员 {{ member.id }}</span>
-          <div class="w-fit flex items-center">
-            <button @click="() => removeTeamMember(member.id)" class="h-48px w-48px aspect-square bg-transparent border-none text-slate-200 font-sans">
-              <Trash class="size-full hover:bg-red-500/20 cursor-pointer rounded" />
-            </button>
+      <div class="w-full space-y-4 mt-40px">
+        <div
+            class="w-full p-4 bg-slate-100/10 rounded-3xl box-border flex flex-col justify-around gap-4 shadow-md backdrop-blur-sm border border-slate-700/30 transition-all hover:bg-slate-700/20"
+            v-for="member of teamMember" :key="member.id">
+          <div class="flex items-center justify-between w-full">
+            <span class="text-zinc-200 font-sans">队员 {{ member.id }}</span>
+            <div class="w-fit flex items-center">
+              <button @click="() => removeTeamMember(member.id)"
+                      class="h-48px w-48px aspect-square bg-transparent border-none text-slate-200 font-sans">
+                <Trash class="size-full hover:bg-red-500/20 cursor-pointer rounded"/>
+              </button>
+            </div>
           </div>
-        </div>
-        <div class="w-full grid grid-cols-2 gap-4">
-          <button
-            @click="()=>onClickTeamMemberSelect(member.id,0)"
-            class="shrink h-48px px-4 hover:text-blue-400 hover:border-blue-400 transition-all duration-200 cursor-pointer rounded-xl text-slate-200 text-xl bg-slate-800/50 border border-2px border-solid border-slate-600 hover:bg-slate-700/50 active:scale-95 font-sans"
-          >
-            {{ getMemberText(member.id,0) }} 左侧
-          </button>
-          <button @click="()=>onClickBind(member.id, 0)" class="h-48px px-4 hover:text-blue-400 hover:border-blue-400 transition-all duration-200 cursor-pointer rounded-xl text-slate-200 text-xl bg-slate-800/50 border border-2px border-solid border-slate-600 hover:bg-slate-700/50 active:scale-95 font-sans">
+          <div class="w-full grid grid-cols-2 gap-4">
+            <button
+                @click="()=>onClickTeamMemberSelect(member.id,0)"
+                class="shrink h-48px px-4 hover:text-blue-400 hover:border-blue-400 transition-all duration-200 cursor-pointer rounded-xl text-slate-200 text-xl bg-slate-800/50 border border-2px border-solid border-slate-600 hover:bg-slate-700/50 active:scale-95 font-sans"
+            >
+              {{ getMemberText(member.id, 0) }} 左侧
+            </button>
+            <button @click="()=>onClickBind(member.id, 0)"
+                    class="h-48px px-4 hover:text-blue-400 hover:border-blue-400 transition-all duration-200 cursor-pointer rounded-xl text-slate-200 text-xl bg-slate-800/50 border border-2px border-solid border-slate-600 hover:bg-slate-700/50 active:scale-95 font-sans">
             <span v-if="member.key[0].state === Type.IDLE && !member.key[0].char">
               点击绑定按键
             </span>
-            <span v-if="member.key[0].state === Type.PENDING">
+              <span v-if="member.key[0].state === Type.PENDING">
               等待输入
-            </span> 
-            <span v-if="member.key[0].state === Type.IDLE && member.key[0].char">
-              {{member.key[0].char}}
             </span>
-          </button>
-        </div>
-        <div class="w-full grid grid-cols-2 gap-4">
-          <button @click="()=>onClickTeamMemberSelect(member.id, 1)" class="h-48px px-4 hover:text-blue-400 hover:border-blue-400 transition-all duration-200 cursor-pointer rounded-xl text-slate-200 text-xl bg-slate-800/50 border border-2px border-solid border-slate-600 hover:bg-slate-700/50 active:scale-95 font-sans">
-            {{ getMemberText(member.id,1) }} 右侧
-          </button>
-          <button @click="()=>onClickBind(member.id, 1)" class="h-48px px-4 hover:text-blue-400 hover:border-blue-400 transition-all duration-200 cursor-pointer rounded-xl text-slate-200 text-xl bg-slate-800/50 border border-2px border-solid border-slate-600 hover:bg-slate-700/50 active:scale-95 font-sans">
+              <span v-if="member.key[0].state === Type.IDLE && member.key[0].char">
+              {{ member.key[0].char }}
+            </span>
+            </button>
+          </div>
+          <div class="w-full grid grid-cols-2 gap-4">
+            <button @click="()=>onClickTeamMemberSelect(member.id, 1)"
+                    class="h-48px px-4 hover:text-blue-400 hover:border-blue-400 transition-all duration-200 cursor-pointer rounded-xl text-slate-200 text-xl bg-slate-800/50 border border-2px border-solid border-slate-600 hover:bg-slate-700/50 active:scale-95 font-sans">
+              {{ getMemberText(member.id, 1) }} 右侧
+            </button>
+            <button @click="()=>onClickBind(member.id, 1)"
+                    class="h-48px px-4 hover:text-blue-400 hover:border-blue-400 transition-all duration-200 cursor-pointer rounded-xl text-slate-200 text-xl bg-slate-800/50 border border-2px border-solid border-slate-600 hover:bg-slate-700/50 active:scale-95 font-sans">
             <span v-if="member.key[1].state === Type.IDLE && !member.key[1].char">
               点击绑定按键
             </span>
-            <span v-if="member.key[1].state === Type.PENDING">
+              <span v-if="member.key[1].state === Type.PENDING">
               等待输入
-            </span> 
-            <span v-if="member.key[1].state === Type.IDLE && member.key[1].char">
-              {{member.key[1].char}}
             </span>
-          </button>
+              <span v-if="member.key[1].state === Type.IDLE && member.key[1].char">
+              {{ member.key[1].char }}
+            </span>
+            </button>
+          </div>
         </div>
       </div>
+      <div class="w-full h-fit mt-4 space-y-4">
+        <button
+            class="w-full h-48px rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 text-zinc-200 border-none cursor-pointer shadow-md hover:shadow-blue-500/30 transition-all hover:scale-[1.02] active:scale-95 font-sans text-xl"
+            @click="addTeamMember">
+          添加队员
+        </button>
+        <button
+            class="w-full h-48px rounded-xl bg-gradient-to-r from-green-600 to-green-500 text-zinc-200 border-none cursor-pointer shadow-md hover:shadow-green-500/30 transition-all hover:scale-[1.02] active:scale-95 font-sans text-xl"
+            @click="testClick">
+          测试点击
+        </button>
+      </div>
     </div>
-    <div class="w-full h-fit mt-4 space-y-4">
-      <button class="w-full h-48px rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 text-zinc-200 border-none cursor-pointer shadow-md hover:shadow-blue-500/30 transition-all hover:scale-[1.02] active:scale-95 font-sans text-xl" @click="addTeamMember">
-        添加队员
-      </button>
-      <button class="w-full h-48px rounded-xl bg-gradient-to-r from-green-600 to-green-500 text-zinc-200 border-none cursor-pointer shadow-md hover:shadow-green-500/30 transition-all hover:scale-[1.02] active:scale-95 font-sans text-xl" @click="testClick">
-        测试点击
-      </button>
-    </div>
-  </div></div>
+  </div>
 </template>

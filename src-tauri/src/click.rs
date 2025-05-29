@@ -1,4 +1,4 @@
-use crate::detect::{DetectState, DETECTING, DETECTION_STATE, DETECT_KEY};
+use crate::detect::{stop_detect, DetectState, DETECTING, DETECTION_STATE, DETECT_KEY};
 use enigo::{Button, Coordinate, Direction, Enigo, Mouse, Settings};
 use lazy_static::lazy_static;
 use std::collections::HashMap;
@@ -91,17 +91,6 @@ pub fn init(app_handle: tauri::AppHandle) {
 
 fn callback(e: &str, app_handle: tauri::AppHandle) {
     app_handle.emit("key_pressed", e).unwrap();
-    if e == *DETECT_KEY.read().unwrap() { 
-        let current_detecting = !DETECTING.load(std::sync::atomic::Ordering::Acquire);
-        DETECTING.store(current_detecting, std::sync::atomic::Ordering::Release);
-        
-        app_handle.emit("detection_pause_state", current_detecting).unwrap();
-        
-        if !current_detecting { 
-            let mut state = DETECTION_STATE.write().unwrap();
-            *state = DetectState::Idle;
-        }
-    }
     
     let Some(&(index, left)) = KEY_BIND.read().unwrap().get(e) else {
         println!("Key pressed: {:?}", KEY_BIND.read().unwrap());
@@ -116,6 +105,8 @@ fn callback(e: &str, app_handle: tauri::AppHandle) {
 
     if pos == (0, 0) {
         return;
+    } else { 
+        stop_detect(&app_handle);
     }
 
     let mut enigo = Enigo::new(&Settings::default()).unwrap();
