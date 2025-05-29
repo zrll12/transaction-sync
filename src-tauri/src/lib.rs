@@ -3,7 +3,7 @@ mod window;
 mod detect;
 
 use click::{delete_click_position, move_mouse, set_key_bind};
-use detect::set_detection_key;
+use detect::{set_detection_key, set_click_state};
 use tauri::async_runtime::spawn;
 use window::{close_select_window, open_select_window};
 
@@ -19,6 +19,7 @@ pub fn run() {
             move_mouse,
             set_key_bind,
             set_detection_key,
+            set_click_state
         ])
         .setup(|app| {
             click::init(app.handle().clone());

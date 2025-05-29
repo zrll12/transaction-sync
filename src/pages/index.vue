@@ -37,6 +37,7 @@ const rootState = reactive({
   state: Type.IDLE,
   key: '',
   stopped: false,
+  canDo: true,
 })
 
 // 区域坐标状态
@@ -135,18 +136,25 @@ const onClickBind = (id: number, idx: 0 | 1) => {
   }, {signal: abort.signal})
 }
 
+const setCanDo = (state: boolean) => {
+  rootState.canDo = state;
+  invoke('set_click_state', {state: rootState.canDo});
+}
+
 const rootBind = () => {
-  if (rootState.state !== Type.IDLE) {
-    return;
-  }
-  rootState.state= Type.PENDING;
-  const abort = new AbortController();
-  window.addEventListener('keydown', (ev) => {
-    rootState.state = Type.IDLE;
-    rootState.key = ev.key;
-    invoke("set_detection_key", {key: rootState.key});
-    abort.abort();
-  }, {signal: abort.signal })
+  setCanDo(true);
+  // invoke('set_click_state', {state: rootState.canDo});
+  // if (rootState.state !== Type.IDLE) {
+  //   return;
+  // }
+  // rootState.state= Type.PENDING;
+  // const abort = new AbortController();
+  // window.addEventListener('keydown', (ev) => {
+  //   rootState.state = Type.IDLE;
+  //   rootState.key = ev.key;
+  //   invoke("set_detection_key", {key: rootState.key});
+  //   abort.abort();
+  // }, {signal: abort.signal })
 }
 
 const bindKey = (id: number, char: string, idx = 0) => {
@@ -219,6 +227,21 @@ listen("detection_pause_state", (event) => {
   rootState.stopped = !event.payload as boolean;
 })
 
+onMounted(() => {
+  window.addEventListener('keydown', (ev) => {
+    const {key} = ev;
+    const someTeamMemberKeyTrigged = teamMember.value.some((member) => {
+      return member.key.some((k) => {
+        return k.char === key;
+      })
+    })
+    if (someTeamMemberKeyTrigged){
+      setCanDo(false);
+      return;
+    }
+  })
+})
+
 </script>
 
 <template>
@@ -231,13 +254,8 @@ listen("detection_pause_state", (event) => {
         <p class="text-slate-200 font-sans">请检测队长的设置并同步</p>
         <div class="flex items-center gap-4">
           <btn @click="rootBind">
-            <span v-if="!rootState.key && rootState.state === Type.IDLE">点击绑定</span>
-            <span v-else-if="rootState.state === Type.PENDING">等待输入</span>
-            <span v-else>{{rootState.key}}</span>
+            当前状态: {{ rootState.canDo ? '监控中' : '停止监控' }}
           </btn>
-          <span class="text-white">
-            当前状态: {{rootState.stopped ? '已停止' : '监视中'}}
-          </span>
         </div>
         <div class="flex flex-col gap-4">
           <div class="space-y-2">
