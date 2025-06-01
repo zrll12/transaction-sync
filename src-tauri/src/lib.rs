@@ -4,8 +4,8 @@ mod detect;
 
 use click::{delete_click_position, move_mouse, set_key_bind};
 use detect::set_detection_key;
-use tauri::async_runtime::spawn;
 use window::{close_select_window, open_select_window};
+use crate::click::set_continue_key;
 use crate::detect::start_detect;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -20,7 +20,8 @@ pub fn run() {
             move_mouse,
             set_key_bind,
             set_detection_key,
-            start_detect
+            start_detect,
+            set_continue_key,
         ])
         .setup(|app| {
             click::init(app.handle().clone());

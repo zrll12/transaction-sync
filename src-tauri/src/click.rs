@@ -3,7 +3,7 @@ use enigo::{Button, Coordinate, Direction, Enigo, Mouse, Settings};
 use lazy_static::lazy_static;
 use std::collections::HashMap;
 use std::net::TcpListener;
-use std::sync::atomic::{AtomicBool, AtomicU32};
+use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::RwLock;
 use std::thread::spawn;
 use tauri::Emitter;
@@ -19,6 +19,7 @@ lazy_static! {
     pub static ref LEFT_CLICK_POSITION: RwLock<Vec<(i32, i32)>> = RwLock::new(vec![]);
     pub static ref RIGHT_CLICK_POSITION: RwLock<Vec<(i32, i32)>> = RwLock::new(vec![]);
     pub static ref KEY_BIND: RwLock<HashMap<String, (i32, bool)>> = RwLock::new(HashMap::new());
+    pub static ref CONTINUE_KEY: RwLock<String> = RwLock::new("".to_string());
     static ref MOUSE_POSITION_X: AtomicU32 = AtomicU32::new(0);
     static ref MOUSE_POSITION_Y: AtomicU32 = AtomicU32::new(0);
     static ref CLICKED: AtomicBool = AtomicBool::new(false);
@@ -92,6 +93,11 @@ pub fn init(app_handle: tauri::AppHandle) {
 fn callback(e: &str, app_handle: tauri::AppHandle) {
     app_handle.emit("key_pressed", e).unwrap();
     
+    if *CONTINUE_KEY.read().unwrap() == e {
+        DETECTING.store(true, Ordering::Relaxed);
+        return;
+    }
+    
     let Some(&(index, left)) = KEY_BIND.read().unwrap().get(e) else {
         println!("Key pressed: {:?}", KEY_BIND.read().unwrap());
         return;
@@ -146,4 +152,9 @@ pub fn click_all_right() {
             std::thread::sleep(std::time::Duration::from_micros(500));
         }
     }
+}
+
+#[tauri::command]
+pub fn set_continue_key(key: String) {
+    *CONTINUE_KEY.write().unwrap() = key;
 }
