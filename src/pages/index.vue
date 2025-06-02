@@ -27,6 +27,8 @@ enum RootSelectType {
   RB2
 }
 
+const continueKey = ref<string | null>(null);
+const continueBindState = ref<Type>(Type.IDLE);
 // 状态管理
 const bindType = ref(Type.IDLE);
 // let curKey: string | null = null;
@@ -110,6 +112,9 @@ const testClick = async () => {
   await invoke('move_mouse');
 }
 const onClickBind = (id: number, idx: 0 | 1) => {
+  if (continueBindState.value !== Type.IDLE){
+    return;
+  }
   if (curBind.value !== -1) {
     return;
   }
@@ -136,10 +141,21 @@ const onClickBind = (id: number, idx: 0 | 1) => {
 }
 
 const rootBind = () => {
-  invoke("start_detect")
-      .then(() => {
-        rootState.stopped = false;
-      })
+  if (continueBindState.value !== Type.IDLE){
+    return;
+  }
+  const abort = new AbortController();
+  continueBindState.value = Type.PENDING;
+  window.addEventListener('keydown', (ev) => {
+    invoke('set_continue_key', {key: ev.key})
+    .then(()=>{
+      continueKey.value = ev.key;
+    })
+    .finally(()=>{
+      continueBindState.value = Type.IDLE;
+      abort.abort();
+    })
+  }, {signal: abort.signal});
 }
 
 const bindKey = (id: number, char: string, idx = 0) => {
@@ -224,8 +240,10 @@ listen("detection_paused", () => {
           <div class="w-full h-1px bg-zinc-500"></div>
           <p class="text-slate-200 font-sans">请检测队长的设置并同步</p>
           <div class="flex items-center gap-4">
-            <btn v-if="rootState.stopped" @click="rootBind">
-              <span>恢复检测</span>
+            <btn @click="rootBind">
+              <span v-if="continueBindState === Type.IDLE && !continueKey">点击绑定</span>
+              <span v-if="continueBindState === Type.PENDING">等待输入</span>
+              <span v-if="continueBindState === Type.IDLE && continueKey">{{continueKey}}</span>
             </btn>
             <span class="text-white">
             当前状态: {{ rootState.stopped ? '已停止' : '监视中' }}
