@@ -31,7 +31,6 @@ const continueKey = ref<string | null>(null);
 const continueBindState = ref<Type>(Type.IDLE);
 // 状态管理
 const bindType = ref(Type.IDLE);
-// let curKey: string | null = null;
 const curBind = ref(-1);
 const teamMember = ref<TeamMember[]>([]);
 
@@ -226,6 +225,10 @@ listen('set_right_click_position', (event) => {
 
 listen("detection_paused", () => {
   rootState.stopped = true;
+})
+
+listen("detection_continue", () => {
+  rootState.stopped = false;
 })
 
 </script>

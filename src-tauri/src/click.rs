@@ -95,6 +95,7 @@ fn callback(e: &str, app_handle: tauri::AppHandle) {
     
     if *CONTINUE_KEY.read().unwrap() == e {
         DETECTING.store(true, Ordering::Relaxed);
+        app_handle.emit("detection_continue", ()).unwrap();
         return;
     }
     
